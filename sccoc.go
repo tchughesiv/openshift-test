@@ -9,7 +9,7 @@ import (
 	securityapi "github.com/openshift/origin/pkg/security/apis/security"
 	"github.com/openshift/origin/pkg/security/securitycontextconstraints"
 	"github.com/openshift/origin/test/util"
-	"k8s.io/kubernetes/pkg/api"
+	kapi "k8s.io/kubernetes/pkg/api"
 )
 
 // const defaultScc = "anyuid"
@@ -31,10 +31,11 @@ func main() {
 			scc = v
 		}
 	}
+	
 	sccn := validNewSecurityContextConstraints(scc)
 	sccn.RunAsUser.UIDRangeMin = &(&struct{ x int64 }{1000100000}).x
 	sccn.RunAsUser.UIDRangeMax = &(&struct{ x int64 }{1000110000}).x
-	sccn.SELinuxContext.SELinuxOptions = &api.SELinuxOptions{
+	sccn.SELinuxContext.SELinuxOptions = &kapi.SELinuxOptions{
 		Level: "s0:c10,c5",
 	}
 
@@ -43,7 +44,6 @@ func main() {
 
 	_, err := securitycontextconstraints.NewSimpleProvider(sccn)
 	checkErr(err)
-
 }
 
 // convert specified scc definition into container runtime configs - using origin code
