@@ -3,10 +3,8 @@
 initial dev space:
 ```shell
 cd ~
-rm -rf $GOPATH 
-mkdir -p $GOPATH/src/k8s.io/
-cd $GOPATH/src/k8s.io/
-git clone https://github.com/openshift/kubernetes
+rm -rf $GOPATH && mkdir -p $GOPATH
+git clone https://github.com/openshift/kubernetes $GOPATH/src/k8s.io/kubernetes
 # sudo yum install mercurial git
 go get -u github.com/tools/godep github.com/Masterminds/glide github.com/sgotti/glide-vc
 go get -d github.com/openshift/origin
