@@ -11,6 +11,7 @@ go get -d github.com/openshift/origin
 cd $GOPATH/src/github.com/openshift/origin/
 git checkout v3.6.0
 # ?? rm -rf $GOPATH/src/github.com/openshift/origin/vendor
+# ?? ./hack/godep-restore.sh
 godep restore
 ```
 
