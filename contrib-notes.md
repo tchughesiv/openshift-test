@@ -5,7 +5,7 @@ initial dev space:
 cd ~
 # sudo yum install mercurial git
 rm -rf $GOPATH && mkdir -p $GOPATH
-go get -u github.com/tools/godep github.com/Masterminds/glide github.com/sgotti/glide-vc
+go get -u github.com/tools/godep
 # git clone https://github.com/openshift/kubernetes $GOPATH/src/k8s.io/kubernetes
 go get -d github.com/openshift/origin
 cd $GOPATH/src/github.com/openshift/origin/
