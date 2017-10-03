@@ -1,0 +1,4 @@
+package: github.com/tchughesiv/sccoc
+import:
+  - package: github.com/openshift/origin
+    version: ^release-3.6
