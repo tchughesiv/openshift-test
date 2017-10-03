@@ -9,7 +9,7 @@ go get -u github.com/tools/godep
 git clone https://github.com/openshift/kubernetes $GOPATH/src/k8s.io/kubernetes
 go get -d github.com/openshift/origin
 cd $GOPATH/src/github.com/openshift/origin/
-git checkout v3.7.0-alpha.1
+git checkout v3.7.0-0.alpha.1.546.f03551f
 rm -rf $GOPATH/src/github.com/openshift/origin/vendor
 # k8s.io/kubernetes dep fix
 # sed -i 's/fff65cf41bdeeaff9964af98450b254f3f2da553/4b31e848f77f51d5b3ed191c6f587bd53508b3f4/g' Godeps/Godeps.json
