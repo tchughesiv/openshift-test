@@ -16,7 +16,7 @@ sed -i 's/fca70798646c8689aeae5928d4ad1278ff8a3c17/db0d0650b6496bfe8061ec56a92ed
 # github.com/google/certificate-transparency dep fix
 sed -i 's/a85d8bf28a950826bf6bc0693caf384ab4c6bec9/af98904302724c29aa6659ca372d41c9687de2b7/g' Godeps/Godeps.json
 # github.com/skynetservices/skydns dep fix
-sed -i 's/30763c4e568fe411f1663af553c063cec8879929/8211c16267029d18ccd39bbd81a5de07927cd9a9/g' Godeps/Godeps.json
+sed -i 's/30763c4e568fe411f1663af553c063cec8879929/00ade3024f047d26130abf161900e0adb72a06f1/g' Godeps/Godeps.json
 # ?? ./hack/godep-restore.sh
 godep restore
 ```
