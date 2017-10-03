@@ -6,11 +6,13 @@ cd ~
 # sudo yum install mercurial git
 rm -rf $GOPATH && mkdir -p $GOPATH
 go get -u github.com/tools/godep
-# git clone https://github.com/openshift/kubernetes $GOPATH/src/k8s.io/kubernetes
+git clone https://github.com/openshift/kubernetes $GOPATH/src/k8s.io/kubernetes
 go get -d github.com/openshift/origin
 cd $GOPATH/src/github.com/openshift/origin/
 git checkout v3.6.0
 rm -rf $GOPATH/src/github.com/openshift/origin/vendor
+# k8s.io/kubernetes dep fix
+sed -i 's/fff65cf41bdeeaff9964af98450b254f3f2da553/4b31e848f77f51d5b3ed191c6f587bd53508b3f4/g' Godeps/Godeps.json
 # github.com/cloudflare/cfssl dep fix
 sed -i 's/fca70798646c8689aeae5928d4ad1278ff8a3c17/db0d0650b6496bfe8061ec56a92edd32d8e75c30/g' Godeps/Godeps.json
 # github.com/google/certificate-transparency dep fix
