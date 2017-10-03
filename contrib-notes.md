@@ -10,7 +10,7 @@ go get -u github.com/tools/godep github.com/Masterminds/glide github.com/sgotti/
 go get -d github.com/openshift/origin
 cd $GOPATH/src/github.com/openshift/origin/
 git checkout v3.6.0
-# ?? rm -rf $GOPATH/src/github.com/openshift/origin/vendor
+rm -rf $GOPATH/src/github.com/openshift/origin/vendor
 # ?? ./hack/godep-restore.sh
 godep restore
 ```
