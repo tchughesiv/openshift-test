@@ -3,14 +3,14 @@
 initial dev space:
 ```shell
 cd ~
-# sudo yum install mercurial git
+sudo yum install mercurial git
 rm -rf $GOPATH && mkdir -p $GOPATH
-go get -u github.com/tools/godep
-# git clone https://github.com/openshift/kubernetes $GOPATH/src/k8s.io/kubernetes
+go get -u github.com/tools/godep github.com/jteeuwen/go-bindata/go-bindata
+git clone https://github.com/kubernetes/kubernetes $GOPATH/src/k8s.io/kubernetes
 # go get -d github.com/openshift/origin
-# cd $GOPATH/src/github.com/openshift/origin/
 # git checkout release-3.6
 git clone -b release-3.6 https://github.com/openshift/origin $GOPATH/src/github.com/openshift/origin
+cd $GOPATH/src/github.com/openshift/origin/
 # ??? rm -rf $GOPATH/src/github.com/openshift/origin/vendor
 # github.com/elazarl/goproxy dep fix
 # sed -i 's/07b16b6e30fcac0ad8c0435548e743bcf2ca7e92/c4fc26588b6ef8af07a191fcb6476387bdd46711/g' Godeps/Godeps.json
@@ -30,8 +30,10 @@ git clone -b release-3.6 https://github.com/openshift/origin $GOPATH/src/github.
 #   k8s.io/apimachinery/pkg/labels \
 #   k8s.io/apimachinery/pkg/runtime \
 #   k8s.io/client-go/discovery
-# ./hack/godep-restore.sh
+./hack/godep-restore.sh
 # godep restore
+cd $GOPATH/src/k8s.io/kubernetes/
+godep restore
 ```
 
 longterm deps:
@@ -39,7 +41,8 @@ longterm deps:
 go get -d github.com/tchughesiv/sccoc
 cd $GOPATH/src/github.com/tchughesiv/sccoc/
 git checkout devel
-godep save ./...
+# godep save ./...
+
 # glide cache-clear
 # glide update --strip-vendor
 # glide up
