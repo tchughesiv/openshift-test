@@ -11,8 +11,11 @@ go get -d github.com/openshift/origin
 cd $GOPATH/src/github.com/openshift/origin/
 git checkout v3.6.0
 rm -rf $GOPATH/src/github.com/openshift/origin/vendor
+# github.com/cloudflare/cfssl dep fix
 sed -i 's/fca70798646c8689aeae5928d4ad1278ff8a3c17/db0d0650b6496bfe8061ec56a92edd32d8e75c30/g' Godeps/Godeps.json
+# github.com/google/certificate-transparency dep fix
 sed -i 's/a85d8bf28a950826bf6bc0693caf384ab4c6bec9/af98904302724c29aa6659ca372d41c9687de2b7/g' Godeps/Godeps.json
+# github.com/skynetservices/skydns dep fix
 sed -i 's/30763c4e568fe411f1663af553c063cec8879929/8211c16267029d18ccd39bbd81a5de07927cd9a9/g' Godeps/Godeps.json
 # ?? ./hack/godep-restore.sh
 godep restore
@@ -27,18 +30,4 @@ godep save ./...
 # glide cache-clear
 # glide update --strip-vendor
 # glide up
-```
-
-dependencies to fix???
-```
-# cd /home/tohughes/Documents/Workspace/go_path/src/github.com/cloudflare/cfssl; git checkout fca70798646c8689aeae5928d4ad1278ff8a3c17
-fatal: reference is not a tree: fca70798646c8689aeae5928d4ad1278ff8a3c17
-godep: error downloading dep (github.com/cloudflare/cfssl/auth): exit status 128
-# cd /home/tohughes/Documents/Workspace/go_path/src/github.com/google/certificate-transparency; git checkout a85d8bf28a950826bf6bc0693caf384ab4c6bec9
-fatal: reference is not a tree: a85d8bf28a950826bf6bc0693caf384ab4c6bec9
-godep: error downloading dep (github.com/google/certificate-transparency/go): exit status 128
-# cd /home/tohughes/Documents/Workspace/go_path/src/github.com/skynetservices/skydns; git checkout 30763c4e568fe411f1663af553c063cec8879929
-fatal: reference is not a tree: 30763c4e568fe411f1663af553c063cec8879929
-godep: error downloading dep (github.com/skynetservices/skydns/cache): exit status 128
-godep: Error downloading some deps. Aborting restore and check.
 ```
