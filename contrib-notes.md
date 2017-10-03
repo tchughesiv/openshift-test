@@ -30,10 +30,11 @@ cd $GOPATH/src/github.com/openshift/origin/
 #   k8s.io/apimachinery/pkg/labels \
 #   k8s.io/apimachinery/pkg/runtime \
 #   k8s.io/client-go/discovery
-./hack/godep-restore.sh
+
+# ./hack/godep-restore.sh
 # godep restore
-cd $GOPATH/src/k8s.io/kubernetes/
-godep restore
+# cd $GOPATH/src/k8s.io/kubernetes/
+# godep restore
 ```
 
 longterm deps:
