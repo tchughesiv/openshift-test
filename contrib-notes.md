@@ -3,10 +3,12 @@
 initial dev space:
 ```shell
 cd ~
-rm -rf $GOPATH && mkdir -p $GOPATH
-git clone https://github.com/openshift/kubernetes $GOPATH/src/k8s.io/kubernetes
 # sudo yum install mercurial git
+rm -rf $GOPATH && mkdir -p $GOPATH
 go get -u github.com/tools/godep github.com/Masterminds/glide github.com/sgotti/glide-vc
+git clone https://github.com/openshift/kubernetes $GOPATH/src/k8s.io/kubernetes
+cd $GOPATH/src/k8s.io/kubernetes/
+./hack/godep-restore.sh
 go get -d github.com/openshift/origin
 cd $GOPATH/src/github.com/openshift/origin/
 git checkout v3.6.0
@@ -19,8 +21,8 @@ sed -i 's/a85d8bf28a950826bf6bc0693caf384ab4c6bec9/af98904302724c29aa6659ca372d4
 sed -i 's/30763c4e568fe411f1663af553c063cec8879929/00ade3024f047d26130abf161900e0adb72a06f1/g' Godeps/Godeps.json
 # github.com/elazarl/goproxy dep fix
 sed -i 's/07b16b6e30fcac0ad8c0435548e743bcf2ca7e92/c4fc26588b6ef8af07a191fcb6476387bdd46711/g' Godeps/Godeps.json
-# ?? ./hack/godep-restore.sh
-godep restore
+./hack/godep-restore.sh
+# godep restore
 ```
 
 longterm deps:
