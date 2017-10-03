@@ -7,8 +7,6 @@ cd ~
 rm -rf $GOPATH && mkdir -p $GOPATH
 go get -u github.com/tools/godep github.com/Masterminds/glide github.com/sgotti/glide-vc
 git clone https://github.com/openshift/kubernetes $GOPATH/src/k8s.io/kubernetes
-cd $GOPATH/src/k8s.io/kubernetes/
-./hack/godep-restore.sh
 go get -d github.com/openshift/origin
 cd $GOPATH/src/github.com/openshift/origin/
 git checkout v3.6.0
