@@ -5,7 +5,7 @@ initial dev space:
 cd ~
 sudo yum install mercurial git
 rm -rf $GOPATH && mkdir -p $GOPATH
-go get -u github.com/tools/godep github.com/jteeuwen/go-bindata/go-bindata
+go get -u github.com/tools/godep github.com/jteeuwen/go-bindata/go-bindata github.com/Masterminds/glide
 git clone https://github.com/kubernetes/kubernetes $GOPATH/src/k8s.io/kubernetes
 # go get -d github.com/openshift/origin
 # git checkout release-3.6
@@ -41,8 +41,8 @@ longterm deps:
 go get -d github.com/tchughesiv/sccoc
 cd $GOPATH/src/github.com/tchughesiv/sccoc/
 git checkout devel
+glide install
 # godep save ./...
-
 # glide cache-clear
 # glide update --strip-vendor
 # glide up
