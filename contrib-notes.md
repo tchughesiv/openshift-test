@@ -30,7 +30,7 @@ git clone -b release-3.6 https://github.com/openshift/origin $GOPATH/src/github.
 #   k8s.io/apimachinery/pkg/labels \
 #   k8s.io/apimachinery/pkg/runtime \
 #   k8s.io/client-go/discovery
-./hack/godep-restore.sh
+# ./hack/godep-restore.sh
 # godep restore
 ```
 
