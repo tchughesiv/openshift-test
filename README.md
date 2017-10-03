@@ -1,4 +1,4 @@
 # sccoc
 [wip] openshift scc image test tool
 
- - relies on Origin v3.7.0-alpha.1
+ - relies on Origin release-3.6
