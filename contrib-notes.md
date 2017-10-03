@@ -19,13 +19,13 @@ sed -i 's/a85d8bf28a950826bf6bc0693caf384ab4c6bec9/af98904302724c29aa6659ca372d4
 sed -i 's/30763c4e568fe411f1663af553c063cec8879929/00ade3024f047d26130abf161900e0adb72a06f1/g' Godeps/Godeps.json
 # github.com/elazarl/goproxy dep fix
 sed -i 's/07b16b6e30fcac0ad8c0435548e743bcf2ca7e92/c4fc26588b6ef8af07a191fcb6476387bdd46711/g' Godeps/Godeps.json
-go get k8s.io/apimachinery/pkg/apimachinery/announced \
-  k8s.io/apimachinery/pkg/api/meta \
-  k8s.io/apimachinery/pkg/api/resource \
-  k8s.io/apimachinery/pkg/apis/meta/v1 \
-  k8s.io/apimachinery/pkg/labels \
-  k8s.io/apimachinery/pkg/runtime \
-  k8s.io/client-go/discovery
+# go get k8s.io/apimachinery/pkg/apimachinery/announced \
+#   k8s.io/apimachinery/pkg/api/meta \
+#   k8s.io/apimachinery/pkg/api/resource \
+#   k8s.io/apimachinery/pkg/apis/meta/v1 \
+#   k8s.io/apimachinery/pkg/labels \
+#   k8s.io/apimachinery/pkg/runtime \
+#   k8s.io/client-go/discovery
 ./hack/godep-restore.sh
 # godep restore
 ```
