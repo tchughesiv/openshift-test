@@ -1,4 +1,7 @@
 package: github.com/tchughesiv/sccoc
 import:
   - package: github.com/openshift/origin
-    version: ^release-3.6
+    version: release-3.6
+  - package: k8s.io/kubernetes
+    version: fff65cf41bdeeaff9964af98450b254f3f2da553
+    repo:    git://github.com/openshift/kubernetes.git
