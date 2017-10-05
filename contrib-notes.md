@@ -8,7 +8,7 @@ cd $GOPATH/src/github.com/tchughesiv/sccoc/
 git checkout devel
 # gometalinter -i -u
 # glide up -v
-glide install
+glide install -v
 
 # before commit/push
 # glide-vc
