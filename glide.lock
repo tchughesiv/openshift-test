@@ -1,5 +1,5 @@
-hash: 000348a1f82b2dada72b52f6227dae8126467d8e27c2ee08de1fd1dd2c530c31
-updated: 2017-10-03T18:52:56.08052443-05:00
+hash: 5524700f1339a73f336bcd8f1e6f78d8d54b4b067cff32c0e5bf638324490b05
+updated: 2017-10-05T12:31:02.331760911-05:00
 imports:
 - name: github.com/blang/semver
   version: 31b736133b98f26d5e078ec9eb591666edfd091f
@@ -161,7 +161,7 @@ imports:
   - jlexer
   - jwriter
 - name: github.com/openshift/origin
-  version: f7a367c68dc0e0e345bda5d1e7bbb36698fac5ba
+  version: c4dd4cf368b6204571faacde702e624b930a5214
   subpackages:
   - pkg/api
   - pkg/api/extension
@@ -457,7 +457,7 @@ imports:
   - pkg/common
 - name: k8s.io/kubernetes
   version: fff65cf41bdeeaff9964af98450b254f3f2da553
-  repo: git://github.com/openshift/kubernetes.git
+  repo: https://github.com/openshift/kubernetes
   subpackages:
   - pkg/api
   - pkg/api/install
