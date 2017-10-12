@@ -1,8 +1,17 @@
 package: github.com/tchughesiv/sccoc
 import:
 - package: github.com/openshift/origin
-  version: release-3.6 # ?? v3.6.0
+  version: release-3.6
 - package: k8s.io/kubernetes
   repo: https://github.com/openshift/kubernetes
-- package: github.com/Azure/go-autorest
-  version: v8.4.0
+- package: k8s.io/apiserver
+  version: release-1.7.0
+  repo: https://github.com/openshift/kubernetes-apiserver
+- package: github.com/skynetservices/skydns
+  version: 5f2ccd23dd0a1182866eeaa74da7dd2ab8860efa
+- package: github.com/cloudflare/cfssl
+  version: 437c6213e569dde639fd116272c27557fd38eaf9
+- package: github.com/google/certificate-transparency
+  version: 51aed18d148e8da140738ce0c3332562c7005ebb
+#- package: github.com/Azure/go-autorest
+#  version: v8.4.0
