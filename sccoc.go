@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"log"
@@ -17,7 +18,6 @@ import (
 	"github.com/openshift/origin/pkg/security/scc"
 	testutil "github.com/openshift/origin/test/util"
 	testserver "github.com/openshift/origin/test/util/server"
-	"golang.org/x/net/context"
 )
 
 func checkErr(err error) {
@@ -41,6 +41,7 @@ func contains(sccopts []string, defaultScc string) bool {
 func main() {
 	defaultScc := "restricted"
 	defaultImage := "docker.io/centos:latest"
+	dockerVersion := "v1.12.6"
 	var sccopts []string
 	var sccn *securityapi.SecurityContextConstraints
 
@@ -67,6 +68,7 @@ func main() {
 	}
 
 	if !contains(sccopts, defaultScc) {
+		fmt.Printf("\n")
 		fmt.Printf("%#v is not a valid scc. Must choose one of these:\n", defaultScc)
 		for _, opt := range sccopts {
 			fmt.Printf(" - %s\n", opt)
@@ -101,54 +103,15 @@ func main() {
 	checkErr(err)
 	tc.SecurityContext = csc
 
-	//
-	// Docker Run Container
-	//
-	ctx := context.Background()
-	cli, err := dockerapi.NewEnvClient()
-	if err != nil {
-		panic(err)
-	}
-
-	_, err = cli.ImagePull(ctx, tc.Image, dockertypes.ImagePullOptions{})
-	if err != nil {
-		panic(err)
-	}
-
-	resp, err := cli.ContainerCreate(ctx, &dockercontainer.Config{
-		Image: tc.Image,
-		Cmd:   []string{"echo", "hello world"},
-	}, nil, nil, "")
-	if err != nil {
-		panic(err)
-	}
-
-	if err := cli.ContainerStart(ctx, resp.ID, dockertypes.ContainerStartOptions{}); err != nil {
-		panic(err)
-	}
-
-	statusCh, errCh := cli.ContainerWait(ctx, resp.ID, dockercontainer.WaitConditionNotRunning)
-	select {
-	case err := <-errCh:
-		if err != nil {
-			panic(err)
-		}
-	case <-statusCh:
-	}
-
-	out, err := cli.ContainerLogs(ctx, resp.ID, dockertypes.ContainerLogsOptions{ShowStdout: true})
-	if err != nil {
-		panic(err)
-	}
-	io.Copy(os.Stdout, out)
-
 	fmt.Printf("\n%#v\n\n", tc)
 	fmt.Printf("%#v\n\n", tc.SecurityContext)
-	fmt.Printf("%#v\n\n", tc.SecurityContext.Capabilities)
-	fmt.Printf("%#v\n\n", tc.SecurityContext.SELinuxOptions)
+	// fmt.Printf("%#v\n\n", tc.SecurityContext.Capabilities)
+	fmt.Printf("%#v\n\n", tc.SecurityContext.SELinuxOptions.Level)
 	// fmt.Printf("%#v\n\n", dcfg.Endpoint)
 	fmt.Printf("Using %#v scc...\n\n", provider.GetSCCName())
 	// fmt.Printf("%#v\n\n", dclient.ClientVersion())
+
+	dockerRun(tc.Image, dockerVersion)
 
 	// !!!  convert specified scc definition into container runtime configs - using origin code??? - search for cap to docker conversion code
 	// !!!  run image accordingly directly against container runtime... no ocp/k8s involvement
@@ -161,4 +124,45 @@ func main() {
 	// vendor/github.com/openshift/origin/vendor/k8s.io/kubernetes/pkg/kubectl/run_test.go
 
 	// kubectl run reference: https://github.com/openshift/kubernetes/blob/openshift-1.6-20170501/pkg/kubectl/run_test.go
+}
+
+func dockerRun(image string, dockerVersion string) {
+	ctx := context.Background()
+	cli, err := dockerapi.NewClient(dockerapi.DefaultDockerHost, dockerVersion, nil, nil)
+	if err != nil {
+		panic(err)
+	}
+
+	ilist, err := cli.ImageList(ctx, dockertypes.ImageListOptions{MatchName: image})
+	if len(ilist) == 0 {
+		iresp, err := cli.ImagePull(ctx, image, dockertypes.ImagePullOptions{})
+		if err != nil {
+			panic(err)
+		}
+		// how do i pretty up the iresp to stdout?
+		io.Copy(os.Stdout, iresp)
+	}
+
+	resp, err := cli.ContainerCreate(ctx, &dockercontainer.Config{
+		Image: image,
+		Cmd:   []string{"echo", "hello world"},
+	}, nil, nil, "")
+	if err != nil {
+		panic(err)
+	}
+
+	if err := cli.ContainerStart(ctx, resp.ID); err != nil {
+		panic(err)
+	}
+
+	_, err = cli.ContainerWait(ctx, resp.ID)
+	if err != nil {
+		panic(err)
+	}
+
+	out, err := cli.ContainerLogs(ctx, resp.ID, dockertypes.ContainerLogsOptions{ShowStdout: true})
+	if err != nil {
+		panic(err)
+	}
+	io.Copy(os.Stdout, out)
 }
