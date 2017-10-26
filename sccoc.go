@@ -18,6 +18,7 @@ import (
 	"github.com/openshift/origin/pkg/security/scc"
 	testutil "github.com/openshift/origin/test/util"
 	testserver "github.com/openshift/origin/test/util/server"
+	"k8s.io/kubernetes/pkg/kubelet/kuberuntime"
 )
 
 func checkErr(err error) {
@@ -111,6 +112,13 @@ func main() {
 	fmt.Printf("Using %#v scc...\n\n", provider.GetSCCName())
 	// fmt.Printf("%#v\n\n", dclient.ClientVersion())
 
+	s := testpod.Status
+	// !!!! vendor/k8s.io/kubernetes/vendor packages/versions are problematic... how glide install w/o???
+	// !!! Use the kubelet methods ... need a kubelet that can then generate container runtime configs
+	k8s, err := kuberuntime.NewKubeGenericRuntimeManager()
+	rco := k8s.runtimeHelper.GenerateRunContainerOptions(testpod, tc, s.PodIP)
+	fmt.Printf("%#v\n\n", rco)
+
 	dockerRun(tc.Image, dockerVersion)
 
 	// !!!  convert specified scc definition into container runtime configs - using origin code??? - search for cap to docker conversion code
@@ -126,6 +134,8 @@ func main() {
 	// kubectl run reference: https://github.com/openshift/kubernetes/blob/openshift-1.6-20170501/pkg/kubectl/run_test.go
 }
 
+// possible reuse functions from here:
+// /home/tohughes/Documents/Workspace/go_path/src/github.com/tchughesiv/sccoc/vendor/github.com/openshift/source-to-image/pkg/docker/docker.go
 func dockerRun(image string, dockerVersion string) {
 	ctx := context.Background()
 	cli, err := dockerapi.NewClient(dockerapi.DefaultDockerHost, dockerVersion, nil, nil)
@@ -133,6 +143,7 @@ func dockerRun(image string, dockerVersion string) {
 		panic(err)
 	}
 
+	// docker.NewEngineAPIClient()
 	ilist, err := cli.ImageList(ctx, dockertypes.ImageListOptions{MatchName: image})
 	if len(ilist) == 0 {
 		iresp, err := cli.ImagePull(ctx, image, dockertypes.ImagePullOptions{})

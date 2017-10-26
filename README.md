@@ -12,5 +12,7 @@
 $ go get -d github.com/tchughesiv/sccoc
 $ cd $GOPATH/src/github.com/tchughesiv/sccoc/
 $ glide install
+$ rm -rf vendor/k8s.io/kubernetes/vendor/github.com/juju/ratelimit \
+    vendor/k8s.io/kubernetes/vendor/github.com/google/cadvisor
 # $ glide up
 ```

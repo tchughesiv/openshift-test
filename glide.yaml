@@ -13,5 +13,5 @@ import:
   version: 437c6213e569dde639fd116272c27557fd38eaf9
 - package: github.com/google/certificate-transparency
   version: 51aed18d148e8da140738ce0c3332562c7005ebb
-#- package: github.com/Azure/go-autorest
-#  version: v8.4.0
+#- package: github.com/gogo/protobuf
+#  version: 6abcf94fd4c97dcb423fdafd42fe9f96ca7e421b
