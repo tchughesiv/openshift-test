@@ -18,7 +18,6 @@ import (
 	"github.com/openshift/origin/pkg/security/scc"
 	testutil "github.com/openshift/origin/test/util"
 	testserver "github.com/openshift/origin/test/util/server"
-	"k8s.io/kubernetes/pkg/kubelet/kuberuntime"
 )
 
 func checkErr(err error) {
@@ -112,12 +111,10 @@ func main() {
 	fmt.Printf("Using %#v scc...\n\n", provider.GetSCCName())
 	// fmt.Printf("%#v\n\n", dclient.ClientVersion())
 
-	s := testpod.Status
-	// !!!! vendor/k8s.io/kubernetes/vendor packages/versions are problematic... how glide install w/o???
+	// s := testpod.Status
 	// !!! Use the kubelet methods ... need a kubelet that can then generate container runtime configs
-	k8s, err := kuberuntime.NewKubeGenericRuntimeManager()
-	rco := k8s.runtimeHelper.GenerateRunContainerOptions(testpod, tc, s.PodIP)
-	fmt.Printf("%#v\n\n", rco)
+	// vendor/k8s.io/kubernetes/pkg/kubelet/kuberuntime/kuberuntime_manager_test.go
+	// rco := manager.runtimeHelper.GenerateRunContainerOptions(testpod, tc, s.PodIP)
 
 	dockerRun(tc.Image, dockerVersion)
 
