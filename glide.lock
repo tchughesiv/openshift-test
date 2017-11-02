@@ -1,5 +1,5 @@
-hash: 1d74d3e1c6263edeaebbaedc9ccc5e43b2d8698a78cce3cd861c11d42a661251
-updated: 2017-10-26T13:51:22.539292173-05:00
+hash: fb2d4d71256c728bd380ec436a3c53e7ead18cf45f76b3ecd1c67af616d2206b
+updated: 2017-11-02T16:24:15.986213763-05:00
 imports:
 - name: bitbucket.org/ww/goautoneg
   version: 75cd24fc2f2c2a2088577d12123ddee5f54e0675
@@ -97,7 +97,8 @@ imports:
   - gettext/plural
   - gettext/po
 - name: github.com/cloudflare/cfssl
-  version: 437c6213e569dde639fd116272c27557fd38eaf9
+  version: fca70798646c8689aeae5928d4ad1278ff8a3c17
+  repo: https://github.com/openshift/cloudflare-cfssl
   subpackages:
   - auth
   - certdb
@@ -232,7 +233,6 @@ imports:
 - name: github.com/coreos/go-systemd
   version: 4484981625c1a6a2ecb40a390fcb6a9bcfee76e3
   subpackages:
-  - activation
   - daemon
   - dbus
   - journal
@@ -315,13 +315,13 @@ imports:
   - types/time
   - types/versions
 - name: github.com/docker/go-connections
-  version: f549a9393d05688dff0992ef3efd8bbe6c628aeb
+  version: 3ede32e2033de7505e6500d6c868c2b9ed9f169d
   subpackages:
   - nat
   - sockets
   - tlsconfig
 - name: github.com/docker/go-units
-  version: e30f1e79f3cd72542f2026ceec18d3bd67ab859c
+  version: 0dadbb0345b35ec7ef35e228dabb8de89a65bf52
 - name: github.com/docker/libtrust
   version: c54fbb67c1f1e68d7d6f8d2ad7c9360404616a41
 - name: github.com/docker/spdystream
@@ -337,6 +337,7 @@ imports:
   - swagger
 - name: github.com/emicklei/go-restful-swagger12
   version: dcef7f55730566d41eae5db10e7d6981829720f6
+  repo: https://github.com/openshift/emicklei-go-restful-swagger12
 - name: github.com/evanphx/json-patch
   version: ba18e35c5c1b36ef6334cad706eb681153d2d379
 - name: github.com/exponent-io/jsonpath
@@ -458,10 +459,10 @@ imports:
   version: 7d79101e329e5a3adf994758c578dab82b90c017
 - name: github.com/google/cadvisor
   version: 2ddeb5f60e22d86c8d1eeb654dfb8bfadf93374c
+  repo: https://github.com/openshift/google-cadvisor
   subpackages:
   - api
   - cache/memory
-  - client/v2
   - collector
   - container
   - container/common
@@ -501,7 +502,8 @@ imports:
   - version
   - zfs
 - name: github.com/google/certificate-transparency
-  version: 51aed18d148e8da140738ce0c3332562c7005ebb
+  version: a85d8bf28a950826bf6bc0693caf384ab4c6bec9
+  repo: https://github.com/openshift/google-certificate-transparency
   subpackages:
   - go
   - go/asn1
@@ -658,12 +660,15 @@ imports:
   version: ad45545899c7b13c020ea92b2072220eefad42b8
 - name: github.com/mitchellh/mapstructure
   version: 740c764bc6149d3f1806231418adb9f52c11bcbf
+- name: github.com/mreiferson/go-httpclient
+  version: 31f0106b4474f14bc441575c19d3a5fa21aa1f6c
 - name: github.com/mxk/go-flowrate
   version: cca7078d478f8520f85629ad7c68962d31ed7682
   subpackages:
   - flowrate
 - name: github.com/opencontainers/runc
   version: d223e2adae83f62d58448a799a5da05730228089
+  repo: https://github.com/openshift/opencontainers-runc
   subpackages:
   - libcontainer
   - libcontainer/apparmor
@@ -682,7 +687,7 @@ imports:
   - libcontainer/user
   - libcontainer/utils
 - name: github.com/openshift/origin
-  version: 008f2d5528bf998326b5eb3f1fe3144c59392b9d
+  version: e541658edd7bf12ece7a1635a429ef7bd7ac13d3
   subpackages:
   - pkg/api
   - pkg/api/extension
@@ -1285,7 +1290,8 @@ imports:
   subpackages:
   - formatters/logstash
 - name: github.com/skynetservices/skydns
-  version: 5f2ccd23dd0a1182866eeaa74da7dd2ab8860efa
+  version: 30763c4e568fe411f1663af553c063cec8879929
+  repo: https://github.com/openshift/skynetservices-skydns
   subpackages:
   - cache
   - metrics
@@ -1493,6 +1499,7 @@ imports:
   version: a83829b6f1293c91addabc89d0571c246397bbf4
 - name: k8s.io/apimachinery
   version: fec62ffbd2b6bb8a676f7861660a112361d90dce
+  repo: https://github.com/openshift/kubernetes-apimachinery
   subpackages:
   - pkg/api/equality
   - pkg/api/errors
@@ -1643,6 +1650,7 @@ imports:
   - plugin/pkg/authorizer/webhook
 - name: k8s.io/client-go
   version: d8822e05975c91b5365b85986388d071b8363eca
+  repo: https://github.com/openshift/kubernetes-client-go
   subpackages:
   - discovery
   - discovery/fake
@@ -1784,6 +1792,7 @@ imports:
   - metrics/apis/metrics/v1alpha1
 - name: k8s.io/kube-aggregator
   version: 184266f4694c374c46501b2ee3fccd0cf75eb866
+  repo: https://github.com/openshift/kubernetes-kube-aggregator
   subpackages:
   - pkg/apis/apiregistration
   - pkg/apis/apiregistration/install
