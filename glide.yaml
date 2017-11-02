@@ -27,9 +27,3 @@ import:
   repo: https://github.com/openshift/opencontainers-runc
 #- package: github.com/docker/distribution
 #  repo: https://github.com/openshift/docker-distribution
-#- package: github.com/skynetservices/skydns
-#  version: 5f2ccd23dd0a1182866eeaa74da7dd2ab8860efa
-#- package: github.com/cloudflare/cfssl
-#  version: 437c6213e569dde639fd116272c27557fd38eaf9
-#- package: github.com/google/certificate-transparency
-#  version: 51aed18d148e8da140738ce0c3332562c7005ebb

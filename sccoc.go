@@ -77,17 +77,12 @@ func main() {
 		os.Exit(1)
 	}
 
+	// How can supress the "startup" logs????
 	_, err := testserver.DefaultMasterOptionsWithTweaks(true, false)
 	checkErr(err)
 	kconfig := testutil.KubeConfigPath()
 	clusterAdminKubeClientset, err := testutil.GetClusterAdminKubeClient(kconfig)
 	checkErr(err)
-	/*
-		clusterAdminClientConfig, err := testutil.GetClusterAdminClientConfig(kconfig)
-		checkErr(err)
-		clusterAdminClient, err := testutil.GetClusterAdminClient(kconfig)
-		checkErr(err)
-	*/
 
 	// reference Admit function vendor/github.com/openshift/origin/pkg/security/admission/admission.go
 	fmt.Printf("\n")
@@ -106,28 +101,37 @@ func main() {
 	fmt.Printf("\n%#v\n\n", tc)
 	fmt.Printf("%#v\n\n", tc.SecurityContext)
 	// fmt.Printf("%#v\n\n", tc.SecurityContext.Capabilities)
-	fmt.Printf("%#v\n\n", tc.SecurityContext.SELinuxOptions.Level)
+	// fmt.Printf("%#v\n\n", tc.SecurityContext.SELinuxOptions.Level)
 	// fmt.Printf("%#v\n\n", dcfg.Endpoint)
 	fmt.Printf("Using %#v scc...\n\n", provider.GetSCCName())
 	// fmt.Printf("%#v\n\n", dclient.ClientVersion())
 
-	// s := testpod.Status
-	// !!! Use the kubelet methods ... need a kubelet that can then generate container runtime configs
-	// vendor/k8s.io/kubernetes/pkg/kubelet/kuberuntime/kuberuntime_manager_test.go
-	// rco := manager.runtimeHelper.GenerateRunContainerOptions(testpod, tc, s.PodIP)
+	// vendoring issues w/ kubelet packages
+	// vendor/k8s.io/kubernetes/vendor/k8s.io/client-go/util/flowcontrol/throttle.go:59: undefined: ratelimit.Clock
+
+	// SOOO, instead use vendor/github.com/openshift/origin/pkg/cmd/server/start/start_node.go to build a NodeConfig
+	// which has everything you need below to GenerateRunContainerOptions
+	// nodeConfig, configFile, err := resolveNodeConfig()
+	// nconfig.MasterKubeConfig
+
+	/*
+		start.Run()
+		s := options.NewKubeletServer()
+		kubeDeps, err := app.UnsecuredKubeletDeps(s)
+		checkErr(err)
+		k, err := kubelet.NewMainKubelet(s.KubeletConfiguration, kubeDeps, true, s.DockershimRootDirectory)
+		checkErr(err)
+		rco := k.GenerateRunContainerOptions(testpod, tc, s.Address)
+		fmt.Printf("%#v\n\n", rco)
+
+		node.BuildKubernetesNodeConfig()
+	*/
 
 	dockerRun(tc.Image, dockerVersion)
-
-	// !!!  convert specified scc definition into container runtime configs - using origin code??? - search for cap to docker conversion code
-	// !!!  run image accordingly directly against container runtime... no ocp/k8s involvement
-	// /home/tohughes/Documents/Workspace/go_path/src/github.com/tchughesiv/sccoc/vendor/github.com/openshift/source-to-image/pkg/docker/docker.go
-	// /home/tohughes/Documents/Workspace/go_path/src/github.com/tchughesiv/sccoc/vendor/github.com/openshift/source-to-image/pkg/docker/docker_test.go
-	// /home/tohughes/Documents/Workspace/go_path/src/github.com/tchughesiv/sccoc/vendor/github.com/openshift/source-to-image/pkg/run/run.go
 
 	// ?? reference for container runtime -
 	// vendor/github.com/openshift/origin/vendor/k8s.io/kubernetes/pkg/kubelet/kubelet.go
 	// vendor/github.com/openshift/origin/vendor/k8s.io/kubernetes/pkg/kubectl/run_test.go
-
 	// kubectl run reference: https://github.com/openshift/kubernetes/blob/openshift-1.6-20170501/pkg/kubectl/run_test.go
 }
 
