@@ -6,14 +6,16 @@ import (
 	"io"
 	"log"
 	"os"
+	"testing"
 
 	dockerapi "github.com/docker/engine-api/client"
 	dockertypes "github.com/docker/engine-api/types"
 	dockercontainer "github.com/docker/engine-api/types/container"
 	bp "github.com/openshift/origin/pkg/cmd/server/bootstrappolicy"
+	"github.com/openshift/origin/pkg/cmd/server/kubernetes/node"
 	"github.com/openshift/origin/pkg/diagnostics/network"
 	allocator "github.com/openshift/origin/pkg/security"
-	"github.com/openshift/origin/pkg/security/admission/testing"
+	admtesting "github.com/openshift/origin/pkg/security/admission/testing"
 	securityapi "github.com/openshift/origin/pkg/security/apis/security"
 	"github.com/openshift/origin/pkg/security/scc"
 	testutil "github.com/openshift/origin/test/util"
@@ -42,6 +44,7 @@ func main() {
 	defaultScc := "restricted"
 	defaultImage := "docker.io/centos:latest"
 	dockerVersion := "v1.12.6"
+	var t *testing.T
 	var sccopts []string
 	var sccn *securityapi.SecurityContextConstraints
 
@@ -49,10 +52,8 @@ func main() {
 		defaultScc = os.Args[len(os.Args)-1]
 	}
 
-	ns := testing.CreateNamespaceForTest()
+	ns := admtesting.CreateNamespaceForTest()
 	ns.Name = testutil.RandomNamespace("tmp")
-	// sa := testing.CreateSAForTest()
-	// sa.Namespace = ns.Name
 	ns.Annotations[allocator.UIDRangeAnnotation] = "1000100000/10000"
 	ns.Annotations[allocator.MCSAnnotation] = "s9:z0,z1"
 	ns.Annotations[allocator.SupplementalGroupsAnnotation] = "1000100000/10000"
@@ -78,10 +79,12 @@ func main() {
 	}
 
 	// How can supress the "startup" logs????
-	_, err := testserver.DefaultMasterOptionsWithTweaks(true, false)
+	_ = testutil.RequireEtcd(t)
+	mconfig, nconfig, _, err := testserver.DefaultAllInOneOptions()
 	checkErr(err)
-	kconfig := testutil.KubeConfigPath()
-	clusterAdminKubeClientset, err := testutil.GetClusterAdminKubeClient(kconfig)
+	clusterAdminKubeClientset, err := testutil.GetClusterAdminKubeClient(testutil.KubeConfigPath())
+	checkErr(err)
+	nodeconfig, err := node.BuildKubernetesNodeConfig(*nconfig, false, false)
 	checkErr(err)
 
 	// reference Admit function vendor/github.com/openshift/origin/pkg/security/admission/admission.go
@@ -92,19 +95,18 @@ func main() {
 	// testpod := testutil.CreatePodFromImage(testis, "latest", ns.Name)
 	testpod := network.GetTestPod(defaultImage, "tcp", "tmp", "localhost", 12000)
 
-	testcontainer := testpod.Spec.Containers[0]
-	tc := &testcontainer
+	tc := &testpod.Spec.Containers[0]
 	csc, err := provider.CreateContainerSecurityContext(testpod, tc)
 	checkErr(err)
 	tc.SecurityContext = csc
 
-	fmt.Printf("\n%#v\n\n", tc)
-	fmt.Printf("%#v\n\n", tc.SecurityContext)
+	fmt.Printf("\n%#v\n\n", tc.SecurityContext)
 	// fmt.Printf("%#v\n\n", tc.SecurityContext.Capabilities)
 	// fmt.Printf("%#v\n\n", tc.SecurityContext.SELinuxOptions.Level)
 	// fmt.Printf("%#v\n\n", dcfg.Endpoint)
 	fmt.Printf("Using %#v scc...\n\n", provider.GetSCCName())
-	// fmt.Printf("%#v\n\n", dclient.ClientVersion())
+	fmt.Printf("%#v\n\n", mconfig.KubernetesMasterConfig.MasterIP)
+	fmt.Printf("%#v\n\n", nodeconfig.KubeletDeps)
 
 	// vendoring issues w/ kubelet packages
 	// vendor/k8s.io/kubernetes/vendor/k8s.io/client-go/util/flowcontrol/throttle.go:59: undefined: ratelimit.Clock
@@ -114,28 +116,27 @@ func main() {
 	// nodeConfig, configFile, err := resolveNodeConfig()
 	// nconfig.MasterKubeConfig
 
-	/*
-		start.Run()
-		s := options.NewKubeletServer()
-		kubeDeps, err := app.UnsecuredKubeletDeps(s)
-		checkErr(err)
-		k, err := kubelet.NewMainKubelet(s.KubeletConfiguration, kubeDeps, true, s.DockershimRootDirectory)
-		checkErr(err)
-		rco := k.GenerateRunContainerOptions(testpod, tc, s.Address)
-		fmt.Printf("%#v\n\n", rco)
+	// start.Run()
 
-		node.BuildKubernetesNodeConfig()
-	*/
+	//	k, err := kubelet.NewMainKubelet(nodeconfig.KubeletConfiguration, kubeDeps, true, nodeconfig.DockershimRootDirectory)
+	//	k, err := kubelet.NewMainKubelet(nodeconfig.KubeletConfiguration, kubeDeps, true, nodeconfig.DockershimRootDirectory)
+	//	checkErr(err)
+	//	rco, _, err := k.GenerateRunContainerOptions(testpod, tc, nodeconfig.Address)
+	//	checkErr(err)
+	//	fmt.Printf("%#v\n\n", nodeconfig.Address)
+	//	fmt.Printf("%#v\n\n", rco)
 
-	dockerRun(tc.Image, dockerVersion)
+	//	node.BuildKubernetesNodeConfig()
 
 	// ?? reference for container runtime -
 	// vendor/github.com/openshift/origin/vendor/k8s.io/kubernetes/pkg/kubelet/kubelet.go
 	// vendor/github.com/openshift/origin/vendor/k8s.io/kubernetes/pkg/kubectl/run_test.go
 	// kubectl run reference: https://github.com/openshift/kubernetes/blob/openshift-1.6-20170501/pkg/kubectl/run_test.go
+
+	dockerRun(tc.Image, dockerVersion)
 }
 
-// possible reuse functions from here:
+// INSTEAD ... possible reuse functions from here:
 // /home/tohughes/Documents/Workspace/go_path/src/github.com/tchughesiv/sccoc/vendor/github.com/openshift/source-to-image/pkg/docker/docker.go
 func dockerRun(image string, dockerVersion string) {
 	ctx := context.Background()
