@@ -117,7 +117,7 @@ func main() {
 	kserver := nodeconfig.KubeletServer
 	kubeDeps := nodeconfig.KubeletDeps
 	kubeCfg := kserver.KubeletConfiguration
-
+	kubelet.KubeletBootstrap
 	k, err := kubelet.NewMainKubelet(kubeCfg, kubeDeps, true, kserver.DockershimRootDirectory)
 	//	k, err := kubelet.NewMainKubelet(nodeconfig.KubeletConfiguration, kubeDeps, true, nodeconfig.DockershimRootDirectory)
 	//	checkErr(err)
