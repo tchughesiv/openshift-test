@@ -1,0 +1,7 @@
+[submodule "vendor/github.com/openshift/origin"]
+	path = vendor/github.com/openshift/origin
+	url = https://github.com/openshift/origin
+	branch = release-3.6
+[submodule "vendor/k8s.io/kubernetes"]
+	path = vendor/k8s.io/kubernetes
+	url = https://github.com/openshift/kubernetes
