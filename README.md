@@ -4,15 +4,18 @@
 
 [wip] openshift scc image test tool
 
- - relies on Origin release-3.6 # ?? v3.6.0
+ - relies on Origin release-3.6 as a submodule
 
 ### Getting started
 
 ```shell
 $ go get -d github.com/tchughesiv/sccoc
 $ cd $GOPATH/src/github.com/tchughesiv/sccoc/
-$ glide install
-$ rm -rf vendor/k8s.io/kubernetes/vendor/github.com/juju/ratelimit \
-    vendor/k8s.io/kubernetes/vendor/github.com/google/cadvisor
 # $ glide up
+```
+
+dev
+```shell
+$ git submodule add -b release-3.6 https://github.com/openshift/origin
+$ ln -s origin/vendor vendor
 ```
