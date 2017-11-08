@@ -17,6 +17,7 @@ import (
 	testserver "github.com/openshift/origin/test/util/server"
 	"k8s.io/kubernetes/pkg/kubelet"
 	"k8s.io/kubernetes/pkg/api/v1"
+	machv1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/kubernetes/pkg/kubelet/cadvisor"
 	"k8s.io/client-go/tools/record"
 )
@@ -111,12 +112,20 @@ func main() {
 		checkErr(err)
 	}
 	// k, err := kubelet.NewMainKubelet(kubeCfg, kubeDeps, true, kserver.DockershimRootDirectory)
-	_, err = kubelet.NewMainKubelet(kubeCfg, kubeDeps, true, kserver.DockershimRootDirectory)
+	k, err := kubelet.NewMainKubelet(kubeCfg, kubeDeps, true, kserver.DockershimRootDirectory)
 	// checkErr(err)
 
 	fmt.Printf("\n")
 	// nodeconfig.RunKubelet()
+	klConfig := k.GetConfiguration()
+	fmt.Printf("%#v\n\n", klConfig)
+
+	klclient := k.GetKubeClient()
+	di := klclient.Apps().Deployments(ns.Name)
+	dl, err := di.List(machv1.ListOptions{})
+	checkErr(err)
 	
+	fmt.Printf("%#v\n\n", dl)
 	// client := kubeDeps.DockerClient
 	// s := kubeDeps.ContainerManager.Status()
 	// tv1c := &v1Pod.Spec.Containers[0]
@@ -131,6 +140,6 @@ func main() {
 	// dockertools.NewDockerManager()
 	// dockerRun(tc.Image, dockerVersion)
 
-	fmt.Printf("\n%#v\n\n", tc.SecurityContext)
+	fmt.Printf("%#v\n\n", tc.SecurityContext)
 	fmt.Printf("Using %#v scc...\n\n", provider.GetSCCName())
 }
