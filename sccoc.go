@@ -86,27 +86,24 @@ func main() {
 	checkErr(err)
 	err = os.RemoveAll(etcdt.DataDir)
 	checkErr(err)
-
-	fmt.Printf("\n")
 	provider, ns, err := scc.CreateProviderFromConstraint(ns.Name, ns, sccn, clusterAdminKubeClientset)
 	checkErr(err)
 
-
 	// !! can go straight k8s from here on out... 
 	testpod := network.GetTestPod(defaultImage, "tcp", "tmp", "localhost", 12000)
-
 	tc := &testpod.Spec.Containers[0]
 	tc.SecurityContext, err = provider.CreateContainerSecurityContext(testpod, tc)
 	checkErr(err)
-
-	fmt.Printf("\n%#v\n\n", tc.SecurityContext)
-	fmt.Printf("Using %#v scc...\n\n", provider.GetSCCName())
+	v1Pod := &v1.Pod{}
+	err = v1.Convert_api_Pod_To_v1_Pod(testpod, v1Pod, nil)
+	checkErr(err)
 
 	// !!! vendoring issues w/ kubelet packages
 	// vendor/k8s.io/kubernetes/vendor/k8s.io/client-go/util/flowcontrol/throttle.go:59: undefined: ratelimit.Clock
 
 	kserver := nodeconfig.KubeletServer
 	kubeCfg := &kserver.KubeletConfiguration
+	// kubeCfg.ContainerRuntime = "docker"
 	kubeDeps := nodeconfig.KubeletDeps
 	kubeDeps.Recorder = record.NewFakeRecorder(100)	
 	if kubeDeps.CAdvisorInterface == nil {
@@ -114,22 +111,15 @@ func main() {
 		checkErr(err)
 	}
 
-	fmt.Printf("%#v\n\n", kubeDeps.ContainerRuntimeOptions)
-	
-	k, err := kubelet.NewMainKubelet(kubeCfg, kubeDeps, true, kserver.DockershimRootDirectory)
-	// _, err = kubelet.NewMainKubelet(kubeCfg, kubeDeps, true, kserver.DockershimRootDirectory)
+	// k, err := kubelet.NewMainKubelet(kubeCfg, kubeDeps, true, kserver.DockershimRootDirectory)
+	_, err = kubelet.NewMainKubelet(kubeCfg, kubeDeps, true, kserver.DockershimRootDirectory)
 	checkErr(err)
 
-	k.BirthCry()
-
-	v1Pod := &v1.Pod{}
-	err = v1.Convert_api_Pod_To_v1_Pod(testpod, v1Pod, nil)
-	checkErr(err)
-	
-	tv1c := &v1Pod.Spec.Containers[0]
+	// s := kubeDeps.ContainerManager.Status()
+	// tv1c := &v1Pod.Spec.Containers[0]
 	// rco, _, err := k.GenerateRunContainerOptions(v1Pod, tv1c, "127.0.0.1")
-	fmt.Printf("%#v\n\n", tv1c)
-	// fmt.Printf("%#v\n\n", nc)
+	// fmt.Printf("\n%#v\n\n", ip)
+	// fmt.Printf("%#v\n\n", s)
 
 	// ?? reference for container runtime -
 	// vendor/github.com/openshift/origin/vendor/k8s.io/kubernetes/pkg/kubelet/kubelet.go
@@ -137,4 +127,7 @@ func main() {
 	// kubectl run reference: https://github.com/openshift/kubernetes/blob/openshift-1.6-20170501/pkg/kubectl/run_test.go
 	// dockertools.NewDockerManager()
 	// dockerRun(tc.Image, dockerVersion)
+
+	fmt.Printf("\n%#v\n\n", tc.SecurityContext)
+	fmt.Printf("Using %#v scc...\n\n", provider.GetSCCName())
 }
