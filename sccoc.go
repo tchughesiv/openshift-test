@@ -131,15 +131,16 @@ func main() {
 		fmt.Printf("%#v\n\n", pi)
 	*/
 
-	podl, err := k.GetRunningPods()
-	checkErr(err)
-	fmt.Printf("%#v\n\n", podl)
-
 	imagelist, err := runtime.ListImages()
 	checkErr(err)
 	fmt.Printf("%#v\n\n", imagelist)
 
+	podl, err := k.GetRunningPods()
+	checkErr(err)
+	fmt.Printf("%#v\n\n", podl)
+
 	podl = append(podl, v1Pod)
+	fmt.Printf("%#v\n\n", podl)
 	fmt.Printf("%#v\n\n", podl[0])
 	fmt.Printf("%#v\n\n", podl[0].Spec.Containers[0])
 	// k.HandlePodAdditions(podl)
