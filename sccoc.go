@@ -17,9 +17,10 @@ import (
 	testserver "github.com/openshift/origin/test/util/server"
 	"k8s.io/kubernetes/pkg/kubelet"
 	"k8s.io/kubernetes/pkg/api/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+//	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/kubernetes/pkg/kubelet/cadvisor"
 	"k8s.io/client-go/tools/record"
+	"k8s.io/kubernetes/pkg/kubelet/container"
 )
 
 func checkErr(err error) {
@@ -111,19 +112,38 @@ func main() {
 	}
 	// k, err := kubelet.NewMainKubelet(kubeCfg, kubeDeps, true, kserver.DockershimRootDirectory)
 	k, err := kubelet.NewMainKubelet(kubeCfg, kubeDeps, true, kserver.DockershimRootDirectory)
-	// checkErr(err)
+	checkErr(err)
 
 	fmt.Printf("\n")
-	// nodeconfig.RunKubelet()
+
 	klConfig := k.GetConfiguration()
 	fmt.Printf("%#v\n\n", klConfig)
+	
+	runtime := k.GetRuntime()
+	fmt.Printf("%#v\n\n", runtime)
 
+	var secret []v1.Secret
+	pi, err := runtime.PullImage(container.ImageSpec{
+		Image: v1Pod.Spec.Containers[0].Image,
+	}, secret)
+	checkErr(err)
+	fmt.Printf("\n")
+	fmt.Printf("%#v\n\n", pi)
+
+	pods, err := runtime.GetPods(true)
+	checkErr(err)
+	fmt.Printf("%#v\n\n", pods)
+	
+	// runtime.SyncPod()
+
+	/*
 	klclient := k.GetKubeClient()
 	di := klclient.Apps().Deployments(ns.Name)
 	dl, err := di.List(metav1.ListOptions{})
 	checkErr(err)
-	
 	fmt.Printf("%#v\n\n", dl)
+	*/
+
 	// client := kubeDeps.DockerClient
 	// s := kubeDeps.ContainerManager.Status()
 	// tv1c := &v1Pod.Spec.Containers[0]
