@@ -110,17 +110,16 @@ func main() {
 		kubeDeps.CAdvisorInterface, err = cadvisor.New(uint(kserver.CAdvisorPort), kserver.ContainerRuntime, kserver.RootDirectory)
 		checkErr(err)
 	}
-	// k, err := kubelet.NewMainKubelet(kubeCfg, kubeDeps, true, kserver.DockershimRootDirectory)
 	k, err := kubelet.NewMainKubelet(kubeCfg, kubeDeps, true, kserver.DockershimRootDirectory)
 	checkErr(err)
 
 	fmt.Printf("\n")
 
-	klConfig := k.GetConfiguration()
-	fmt.Printf("%#v\n\n", klConfig)
+	// klConfig := k.GetConfiguration()
+	// fmt.Printf("%#v\n\n", klConfig)
 	
 	runtime := k.GetRuntime()
-	fmt.Printf("%#v\n\n", runtime)
+	// fmt.Printf("%#v\n\n", runtime)
 
 	var secret []v1.Secret
 	pi, err := runtime.PullImage(container.ImageSpec{
@@ -130,12 +129,19 @@ func main() {
 	fmt.Printf("\n")
 	fmt.Printf("%#v\n\n", pi)
 
-	pods, err := runtime.GetPods(true)
+	podl, err := k.GetRunningPods()
 	checkErr(err)
-	fmt.Printf("%#v\n\n", pods)
-	
-	// runtime.SyncPod()
+	fmt.Printf("%#v\n\n", podl)
 
+	imagelist, err := runtime.ListImages()
+	checkErr(err)
+	fmt.Printf("%#v\n\n", imagelist)
+
+	podl = append(podl, v1Pod)
+	fmt.Printf("%#v\n\n", podl[0])
+	fmt.Printf("%#v\n\n", podl[0].Spec.Containers[0])
+	// k.HandlePodAdditions(podl)
+	
 	/*
 	klclient := k.GetKubeClient()
 	di := klclient.Apps().Deployments(ns.Name)
@@ -144,13 +150,6 @@ func main() {
 	fmt.Printf("%#v\n\n", dl)
 	*/
 
-	// client := kubeDeps.DockerClient
-	// s := kubeDeps.ContainerManager.Status()
-	// tv1c := &v1Pod.Spec.Containers[0]
-	// rco, _, err := k.GenerateRunContainerOptions(v1Pod, tv1c, "127.0.0.1")
-	// fmt.Printf("\n%#v\n\n", ip)
-	// fmt.Printf("%#v\n\n", s)
-
 	// ?? reference for container runtime -
 	// vendor/github.com/openshift/origin/vendor/k8s.io/kubernetes/pkg/kubelet/kubelet.go
 	// vendor/github.com/openshift/origin/vendor/k8s.io/kubernetes/pkg/kubectl/run_test.go
@@ -158,6 +157,7 @@ func main() {
 	// dockertools.NewDockerManager()
 	// dockerRun(tc.Image, dockerVersion)
 
-	fmt.Printf("%#v\n\n", tc.SecurityContext)
+	// fmt.Printf("%#v\n\n", podl[0].Spec.Containers[0].Name)
+	fmt.Printf("%#v\n\n", podl[0].Spec.Containers[0].SecurityContext)
 	fmt.Printf("Using %#v scc...\n\n", provider.GetSCCName())
 }
