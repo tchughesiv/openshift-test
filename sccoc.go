@@ -2,11 +2,10 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
+//	"io/ioutil"
 	"log"
 	"os"
 	"testing"
-	"time"
 
 	bp "github.com/openshift/origin/pkg/cmd/server/bootstrappolicy"
 	"github.com/openshift/origin/pkg/cmd/server/kubernetes/node"
@@ -17,9 +16,10 @@ import (
 	"github.com/openshift/origin/pkg/security/scc"
 	testutil "github.com/openshift/origin/test/util"
 	testserver "github.com/openshift/origin/test/util/server"
-	"k8s.io/kubernetes/pkg/apis/componentconfig"
 	"k8s.io/kubernetes/pkg/kubelet"
 	"k8s.io/kubernetes/pkg/api/v1"
+	"k8s.io/kubernetes/pkg/kubelet/cadvisor"
+	"k8s.io/client-go/tools/record"
 )
 
 func checkErr(err error) {
@@ -43,7 +43,6 @@ func contains(sccopts []string, defaultScc string) bool {
 func main() {
 	defaultScc := "restricted"
 	defaultImage := "docker.io/centos:latest"
-	// dockerVersion := "v1.12.6"
 	var t *testing.T
 	var sccopts []string
 	var sccn *securityapi.SecurityContextConstraints
@@ -108,42 +107,30 @@ func main() {
 	// vendor/k8s.io/kubernetes/vendor/k8s.io/client-go/util/flowcontrol/throttle.go:59: undefined: ratelimit.Clock
 
 	kserver := nodeconfig.KubeletServer
+	kubeCfg := &kserver.KubeletConfiguration
 	kubeDeps := nodeconfig.KubeletDeps
-	kubeCfg := &componentconfig.KubeletConfiguration{}
-	kubeCfg.SyncFrequency.Duration = 10 * time.Second
-	// How the Kubelet should setup hairpin NAT. Can take the values: "promiscuous-bridge"
-	// (make cbr0 promiscuous), "hairpin-veth" (set the hairpin flag on veth interfaces)
-	// or "none" (do nothing).
-	kubeCfg.HairpinMode = "none"
-	kubeCfg.NetworkPluginName = "cni"
-	
-	if tempDir, err := ioutil.TempDir("/tmp", "kubelet_test."); err != nil {
-		t.Fatalf("can't make a temp rootdir: %v", err)
-	} else {
-		kubeCfg.RootDirectory = tempDir
-	}
-	if err := os.MkdirAll(kubeCfg.RootDirectory, 0750); err != nil {
-		t.Fatalf("can't mkdir(%q): %v", kubeCfg.RootDirectory, err)
+	kubeDeps.Recorder = record.NewFakeRecorder(100)	
+	if kubeDeps.CAdvisorInterface == nil {
+		kubeDeps.CAdvisorInterface, err = cadvisor.New(uint(kserver.CAdvisorPort), kserver.ContainerRuntime, kserver.RootDirectory)
+		checkErr(err)
 	}
 
-	fmt.Printf("%#v\n\n", kubeDeps.CAdvisorInterface)
-	fmt.Printf("%#v\n\n", kubeCfg.CAdvisorPort)
+	fmt.Printf("%#v\n\n", kubeDeps.ContainerRuntimeOptions)
 	
 	k, err := kubelet.NewMainKubelet(kubeCfg, kubeDeps, true, kserver.DockershimRootDirectory)
+	// _, err = kubelet.NewMainKubelet(kubeCfg, kubeDeps, true, kserver.DockershimRootDirectory)
 	checkErr(err)
+
+	k.BirthCry()
 
 	v1Pod := &v1.Pod{}
 	err = v1.Convert_api_Pod_To_v1_Pod(testpod, v1Pod, nil)
 	checkErr(err)
-	tv1c := &v1Pod.Spec.Containers[0]
 	
-	fmt.Printf("%#v\n\n", kserver.ContainerRuntime)
-	// fmt.Printf("%#v\n\n", kubeCfg.RootDirectory)
-	// fmt.Printf("%#v\n\n", kubeCfg.ContainerRuntime)
-
-	rco, _, err := k.GenerateRunContainerOptions(v1Pod, tv1c, v1Pod.Status.PodIP)
-
+	tv1c := &v1Pod.Spec.Containers[0]
+	rco, _, err := k.GenerateRunContainerOptions(v1Pod, tv1c, "127.0.0.1")
 	fmt.Printf("%#v\n\n", rco)
+	// fmt.Printf("%#v\n\n", nc)
 
 	// ?? reference for container runtime -
 	// vendor/github.com/openshift/origin/vendor/k8s.io/kubernetes/pkg/kubelet/kubelet.go
@@ -151,50 +138,7 @@ func main() {
 	// kubectl run reference: https://github.com/openshift/kubernetes/blob/openshift-1.6-20170501/pkg/kubectl/run_test.go
 	// dockertools.NewDockerManager()
 	// dockerRun(tc.Image, dockerVersion)
-}
 
-// INSTEAD ... possible reuse functions from here:
-// /home/tohughes/Documents/Workspace/go_path/src/github.com/tchughesiv/sccoc/vendor/github.com/openshift/source-to-image/pkg/docker/docker.go
-func dockerRun(image string, dockerVersion string) {
-	/*
-		ctx := context.Background()
-		cli, err := dockerapi.NewClient(dockerapi.DefaultDockerHost, dockerVersion, nil, nil)
-		if err != nil {
-			panic(err)
-		}
-
-		// docker.NewEngineAPIClient()
-		ilist, err := cli.ImageList(ctx, dockertypes.ImageListOptions{MatchName: image})
-		if len(ilist) == 0 {
-			iresp, err := cli.ImagePull(ctx, image, dockertypes.ImagePullOptions{})
-			if err != nil {
-				panic(err)
-			}
-			// how do i pretty up the iresp to stdout?
-			io.Copy(os.Stdout, iresp)
-		}
-
-		resp, err := cli.ContainerCreate(ctx, &dockercontainer.Config{
-			Image: image,
-			Cmd:   []string{"echo", "hello world"},
-		}, nil, nil, "")
-		if err != nil {
-			panic(err)
-		}
-
-		if err := cli.ContainerStart(ctx, resp.ID); err != nil {
-			panic(err)
-		}
-
-		_, err = cli.ContainerWait(ctx, resp.ID)
-		if err != nil {
-			panic(err)
-		}
-
-		out, err := cli.ContainerLogs(ctx, resp.ID, dockertypes.ContainerLogsOptions{ShowStdout: true})
-		if err != nil {
-			panic(err)
-		}
-		io.Copy(os.Stdout, out)
-	*/
+	err = os.RemoveAll(kubeCfg.RootDirectory)
+	checkErr(err)
 }
