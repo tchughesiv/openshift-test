@@ -1,9 +1,7 @@
 package main
 
 import (
-	"k8s.io/kubernetes/pkg/kubelet/kuberuntime"
 	"fmt"
-//	"io/ioutil"
 	"log"
 	"os"
 	"testing"
@@ -129,8 +127,8 @@ func main() {
 	checkErr(err)
 	
 	tv1c := &v1Pod.Spec.Containers[0]
-	rco, _, err := k.GenerateRunContainerOptions(v1Pod, tv1c, "127.0.0.1")
-	fmt.Printf("%#v\n\n", rco)
+	// rco, _, err := k.GenerateRunContainerOptions(v1Pod, tv1c, "127.0.0.1")
+	fmt.Printf("%#v\n\n", tv1c)
 	// fmt.Printf("%#v\n\n", nc)
 
 	// ?? reference for container runtime -
