@@ -1,6 +1,7 @@
 package main
 
 import (
+	"k8s.io/kubernetes/pkg/kubelet/kuberuntime"
 	"fmt"
 //	"io/ioutil"
 	"log"
@@ -138,7 +139,4 @@ func main() {
 	// kubectl run reference: https://github.com/openshift/kubernetes/blob/openshift-1.6-20170501/pkg/kubectl/run_test.go
 	// dockertools.NewDockerManager()
 	// dockerRun(tc.Image, dockerVersion)
-
-	err = os.RemoveAll(kubeCfg.RootDirectory)
-	checkErr(err)
 }
