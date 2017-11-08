@@ -20,7 +20,7 @@ import (
 //	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/kubernetes/pkg/kubelet/cadvisor"
 	"k8s.io/client-go/tools/record"
-	"k8s.io/kubernetes/pkg/kubelet/container"
+//	"k8s.io/kubernetes/pkg/kubelet/container"
 )
 
 func checkErr(err error) {
@@ -121,13 +121,15 @@ func main() {
 	runtime := k.GetRuntime()
 	// fmt.Printf("%#v\n\n", runtime)
 
-	var secret []v1.Secret
-	pi, err := runtime.PullImage(container.ImageSpec{
-		Image: v1Pod.Spec.Containers[0].Image,
-	}, secret)
-	checkErr(err)
-	fmt.Printf("\n")
-	fmt.Printf("%#v\n\n", pi)
+	/*
+		var secret []v1.Secret
+		pi, err := runtime.PullImage(container.ImageSpec{
+			Image: v1Pod.Spec.Containers[0].Image,
+		}, secret)
+		checkErr(err)
+		fmt.Printf("\n")
+		fmt.Printf("%#v\n\n", pi)
+	*/
 
 	podl, err := k.GetRunningPods()
 	checkErr(err)
