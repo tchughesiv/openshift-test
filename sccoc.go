@@ -17,7 +17,7 @@ import (
 	testserver "github.com/openshift/origin/test/util/server"
 	"k8s.io/kubernetes/pkg/kubelet"
 	"k8s.io/kubernetes/pkg/api/v1"
-	machv1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/kubernetes/pkg/kubelet/cadvisor"
 	"k8s.io/client-go/tools/record"
 )
@@ -81,13 +81,11 @@ func main() {
 	etcdt := testutil.RequireEtcd(t)
 	_, nconfig, _, err := testserver.DefaultAllInOneOptions()
 	checkErr(err)
-	clusterAdminKubeClientset, err := testutil.GetClusterAdminKubeClient(testutil.KubeConfigPath())
-	checkErr(err)
 	nodeconfig, err := node.BuildKubernetesNodeConfig(*nconfig, false, false)
 	checkErr(err)
-	err = os.RemoveAll(etcdt.DataDir)
+	provider, ns, err := scc.CreateProviderFromConstraint(ns.Name, ns, sccn, nodeconfig.Client)
 	checkErr(err)
-	provider, ns, err := scc.CreateProviderFromConstraint(ns.Name, ns, sccn, clusterAdminKubeClientset)
+	err = os.RemoveAll(etcdt.DataDir)
 	checkErr(err)
 
 	// !! can go straight k8s from here on out... 
@@ -122,7 +120,7 @@ func main() {
 
 	klclient := k.GetKubeClient()
 	di := klclient.Apps().Deployments(ns.Name)
-	dl, err := di.List(machv1.ListOptions{})
+	dl, err := di.List(metav1.ListOptions{})
 	checkErr(err)
 	
 	fmt.Printf("%#v\n\n", dl)
