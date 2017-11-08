@@ -105,16 +105,19 @@ func main() {
 	kubeCfg := &kserver.KubeletConfiguration
 	// kubeCfg.ContainerRuntime = "docker"
 	kubeDeps := nodeconfig.KubeletDeps
-	kubeDeps.Recorder = record.NewFakeRecorder(100)	
+	kubeDeps.Recorder = record.NewFakeRecorder(100)
 	if kubeDeps.CAdvisorInterface == nil {
 		kubeDeps.CAdvisorInterface, err = cadvisor.New(uint(kserver.CAdvisorPort), kserver.ContainerRuntime, kserver.RootDirectory)
 		checkErr(err)
 	}
-
 	// k, err := kubelet.NewMainKubelet(kubeCfg, kubeDeps, true, kserver.DockershimRootDirectory)
 	_, err = kubelet.NewMainKubelet(kubeCfg, kubeDeps, true, kserver.DockershimRootDirectory)
-	checkErr(err)
+	// checkErr(err)
 
+	fmt.Printf("\n")
+	// nodeconfig.RunKubelet()
+	
+	// client := kubeDeps.DockerClient
 	// s := kubeDeps.ContainerManager.Status()
 	// tv1c := &v1Pod.Spec.Containers[0]
 	// rco, _, err := k.GenerateRunContainerOptions(v1Pod, tv1c, "127.0.0.1")
