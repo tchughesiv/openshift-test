@@ -16,8 +16,8 @@ import (
 	testutil "github.com/openshift/origin/test/util"
 	testserver "github.com/openshift/origin/test/util/server"
 	"k8s.io/client-go/tools/record"
+	"k8s.io/kubernetes/cmd/kubelet/app"
 	"k8s.io/kubernetes/pkg/api/v1"
-	"k8s.io/kubernetes/pkg/kubelet"
 	"k8s.io/kubernetes/pkg/kubelet/cadvisor"
 )
 
@@ -82,7 +82,9 @@ func main() {
 	checkErr(err)
 	nodeconfig, err := node.BuildKubernetesNodeConfig(*nconfig, false, false)
 	checkErr(err)
-	// nodeconfig.Containerized = true
+
+	nodeconfig.Containerized = true
+
 	provider, ns, err := scc.CreateProviderFromConstraint(ns.Name, ns, sccn, nodeconfig.Client)
 	checkErr(err)
 	err = os.RemoveAll(etcdt.DataDir)
@@ -93,6 +95,7 @@ func main() {
 	tc := &testpod.Spec.Containers[0]
 	tc.SecurityContext, err = provider.CreateContainerSecurityContext(testpod, tc)
 	checkErr(err)
+
 	v1Pod := &v1.Pod{}
 	err = v1.Convert_api_Pod_To_v1_Pod(testpod, v1Pod, nil)
 	checkErr(err)
@@ -104,52 +107,72 @@ func main() {
 	kubeCfg := &kserver.KubeletConfiguration
 	// kubeCfg.ContainerRuntime = "docker"
 	kubeDeps := nodeconfig.KubeletDeps
+
 	kubeDeps.Recorder = record.NewFakeRecorder(100)
 	if kubeDeps.CAdvisorInterface == nil {
 		kubeDeps.CAdvisorInterface, err = cadvisor.New(uint(kserver.CAdvisorPort), kserver.ContainerRuntime, kserver.RootDirectory)
 		checkErr(err)
 	}
-	k, err := kubelet.NewMainKubelet(kubeCfg, kubeDeps, true, kserver.DockershimRootDirectory)
+
+	// nodeconfig.RunKubelet()
+	err = app.RunKubelet(kubeCfg, kubeDeps, false, true, kserver.DockershimRootDirectory)
 	checkErr(err)
 
 	fmt.Printf("\n")
 
-	kruntime := k.GetRuntime()
-	// kconfig := k.GetConfiguration()
+	/*
+		k, err := kubelet.NewMainKubelet(kubeCfg, kubeDeps, true, kserver.DockershimRootDirectory)
+		checkErr(err)
 
-	// fmt.Printf("%#v\n\n", kconfig)
-	// fmt.Printf("%#v\n\n", kruntime)
+		podl, err := k.GetRunningPods()
+		checkErr(err)
+		podl = append(podl, v1Pod)
+		fmt.Printf("%#v\n\n", podl[0])
+		fmt.Printf("%#v\n\n", podl[0].Spec.Containers[0])
+		fmt.Printf("%#v\n\n", podl[0].Spec.Containers[0].SecurityContext)
+		fmt.Printf("%#v\n\n", kserver.RootDirectory)
+
+		kruntime := k.GetRuntime()
+		imagelist, err := kruntime.ListImages()
+		checkErr(err)
+		fmt.Printf("%#v\n\n", imagelist)
+	*/
+	// k.HandlePodAdditions(podl)
 
 	/*
-		var secret []v1.Secret
-		pi, err := kruntime.PullImage(container.ImageSpec{
-			Image: v1Pod.Spec.Containers[0].Image,
-		}, secret)
+		k, err := app.CreateAndInitKubelet(kubeCfg, kubeDeps, true, kserver.DockershimRootDirectory)
+
+		// kconfig := k.GetConfiguration()
+
+			var secret []v1.Secret
+			pi, err := kruntime.PullImage(container.ImageSpec{
+				Image: v1Pod.Spec.Containers[0].Image,
+			}, secret)
+			checkErr(err)
+			fmt.Printf("\n")
+			fmt.Printf("%#v\n\n", pi)
+
+		imagelist, err := kruntime.ListImages()
 		checkErr(err)
-		fmt.Printf("\n")
-		fmt.Printf("%#v\n\n", pi)
+		fmt.Printf("%#v\n\n", imagelist)
+
+
+		var updates <-chan kubetypes.PodUpdate
+			updates <- kubetypes.PodUpdate{
+				Pods:   podl,
+				Op:     kubetypes.ADD,
+				Source: kubetypes.AllSource,
+			}
+		// k.BirthCry()
+		// k.StartGarbageCollection()
+
+		runresult, err := k.RunOnce(updates)
+		checkErr(err)
+		fmt.Printf("\n%#v\n\n", runresult)
+
+		fmt.Printf("%#v\n\n", k.GetActivePods())
 	*/
-
-	imagelist, err := kruntime.ListImages()
-	checkErr(err)
-	fmt.Printf("%#v\n\n", imagelist)
-
-	podl, err := k.GetRunningPods()
-	checkErr(err)
-	podl = append(podl, v1Pod)
-	fmt.Printf("%#v\n\n", podl[0])
-	fmt.Printf("%#v\n\n", podl[0].Spec.Containers[0])
-	fmt.Printf("%#v\n\n", podl[0].Spec.Containers[0].SecurityContext)
-	fmt.Printf("%#v\n\n", nodeconfig)
-
-	//tcv1 := &v1Pod.Spec.Containers[0]
-	//knodeconfig, _, err := k.GenerateRunContainerOptions(v1Pod, tcv1, "")
-	//checkErr(err)
-	//fmt.Printf("%#v\n\n", knodeconfig)
-	// knode, err := k.GetNode()
-	// fmt.Printf("%#v\n\n", knode.Status.Allocatable)
-	// checkErr(err)
-	// k.HandlePodAdditions(podl)
+	// k.GetNodeConfig().ContainerRuntime
 
 	fmt.Printf("Using %#v scc...\n\n", provider.GetSCCName())
 }
