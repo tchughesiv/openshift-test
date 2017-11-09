@@ -12,7 +12,7 @@
 $ go get -d github.com/tchughesiv/sccoc
 $ mkdir -p $GOPATH/src/github.com/openshift
 $ ln -s $GOPATH/src/github.com/tchughesiv/sccoc $GOPATH/src/github.com/openshift/origin
-$ cd $GOPATH/src/github.com/tchughesiv/sccoc/
+$ cd $GOPATH/src/github.com/openshift/origin/
 $ git submodule update --init
 $ go build
 # $ go run sccoc.go
