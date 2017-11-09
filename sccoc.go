@@ -105,7 +105,6 @@ func main() {
 
 	kserver := nodeconfig.KubeletServer
 	kubeCfg := &kserver.KubeletConfiguration
-	kubeCfg.PodManifestPath = "/tmp/openshift-integration/volume/manifests"
 	// kubeCfg.ContainerRuntime = "docker"
 	kubeDeps := nodeconfig.KubeletDeps
 
@@ -116,7 +115,10 @@ func main() {
 	}
 
 	// nodeconfig.RunKubelet()
-
+	// requires higher max user watches for file method...
+	// sudo sysctl fs.inotify.max_user_watches=524288
+	// kubeCfg.PodManifestPath
+	kubeCfg.PodManifestPath = "/tmp/openshift-integration/volume/manifests"
 	err = app.RunKubelet(kubeCfg, kubeDeps, false, true, kserver.DockershimRootDirectory)
 	checkErr(err)
 
