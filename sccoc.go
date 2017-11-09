@@ -15,12 +15,10 @@ import (
 	"github.com/openshift/origin/pkg/security/scc"
 	testutil "github.com/openshift/origin/test/util"
 	testserver "github.com/openshift/origin/test/util/server"
-	"k8s.io/kubernetes/pkg/kubelet"
-	"k8s.io/kubernetes/pkg/api/v1"
-//	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/kubernetes/pkg/kubelet/cadvisor"
 	"k8s.io/client-go/tools/record"
-//	"k8s.io/kubernetes/pkg/kubelet/container"
+	"k8s.io/kubernetes/pkg/api/v1"
+	"k8s.io/kubernetes/pkg/kubelet"
+	"k8s.io/kubernetes/pkg/kubelet/cadvisor"
 )
 
 func checkErr(err error) {
@@ -89,7 +87,7 @@ func main() {
 	err = os.RemoveAll(etcdt.DataDir)
 	checkErr(err)
 
-	// !! can go straight k8s from here on out... 
+	// !! can go straight k8s from here on out...
 	testpod := network.GetTestPod(defaultImage, "tcp", "tmp", "localhost", 12000)
 	tc := &testpod.Spec.Containers[0]
 	tc.SecurityContext, err = provider.CreateContainerSecurityContext(testpod, tc)
@@ -117,7 +115,7 @@ func main() {
 
 	// klConfig := k.GetConfiguration()
 	// fmt.Printf("%#v\n\n", klConfig)
-	
+
 	runtime := k.GetRuntime()
 	// fmt.Printf("%#v\n\n", runtime)
 
@@ -144,13 +142,13 @@ func main() {
 	fmt.Printf("%#v\n\n", podl[0])
 	fmt.Printf("%#v\n\n", podl[0].Spec.Containers[0])
 	// k.HandlePodAdditions(podl)
-	
+
 	/*
-	klclient := k.GetKubeClient()
-	di := klclient.Apps().Deployments(ns.Name)
-	dl, err := di.List(metav1.ListOptions{})
-	checkErr(err)
-	fmt.Printf("%#v\n\n", dl)
+		klclient := k.GetKubeClient()
+		di := klclient.Apps().Deployments(ns.Name)
+		dl, err := di.List(metav1.ListOptions{})
+		checkErr(err)
+		fmt.Printf("%#v\n\n", dl)
 	*/
 
 	// ?? reference for container runtime -

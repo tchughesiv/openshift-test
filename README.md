@@ -8,12 +8,13 @@
 
 ### Getting started
 
+build
 ```shell
-$ go get -d github.com/tchughesiv/sccoc
-$ mkdir -p $GOPATH/src/github.com/openshift
-$ ln -s $GOPATH/src/github.com/tchughesiv/sccoc $GOPATH/src/github.com/openshift/origin
+$ git clone https://github.com/tchughesiv/sccoc $GOPATH/src/github.com/openshift/origin
 # alternatively could... instead of the above???
-# $ git clone https://github.com/tchughesiv/sccoc $GOPATH/src/github.com/openshift/origin
+# $ go get -d github.com/tchughesiv/sccoc
+# $ mkdir -p $GOPATH/src/github.com/openshift
+# $ ln -s $GOPATH/src/github.com/tchughesiv/sccoc $GOPATH/src/github.com/openshift/origin
 $ cd $GOPATH/src/github.com/openshift/origin/
 $ git submodule update --init
 $ go build sccoc.go
@@ -26,4 +27,11 @@ $ git submodule add -f -b release-3.6 https://github.com/openshift/origin
 $ ln -s ./origin/vendor
 $ ln -s ./origin/pkg
 $ ln -s ./origin/test
+```
+
+??? other notes
+```shell
+# git clone -b release-3.6 https://github.com/openshift/origin $GOPATH/src/github.com/openshift/origin
+# cd $GOPATH/src/github.com/openshift/origin
+# ./hack/godep-restore.sh
 ```
