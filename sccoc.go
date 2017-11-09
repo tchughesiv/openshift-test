@@ -114,16 +114,18 @@ func main() {
 		checkErr(err)
 	}
 
-	// nodeconfig.RunKubelet()
 	// requires higher max user watches for file method...
 	// sudo sysctl fs.inotify.max_user_watches=524288
-	// kubeCfg.PodManifestPath
-	kubeCfg.PodManifestPath = "/tmp/openshift-integration/volume/manifests"
+	// make the change permanent, edit the file /etc/sysctl.conf and add the line to the end of the file
+	kubeCfg.PodManifestPath = kserver.RootDirectory + "/manifests"
+	if _, err := os.Stat(kubeCfg.PodManifestPath); os.IsNotExist(err) {
+		os.Mkdir(kubeCfg.PodManifestPath, 0750)
+	}
+
 	err = app.RunKubelet(kubeCfg, kubeDeps, false, true, kserver.DockershimRootDirectory)
 	checkErr(err)
 
 	fmt.Printf("\n")
-	fmt.Printf("%#v\n\n", kubeCfg.PodManifestPath)
 
 	/*
 		k, err := kubelet.NewMainKubelet(kubeCfg, kubeDeps, true, kserver.DockershimRootDirectory)
