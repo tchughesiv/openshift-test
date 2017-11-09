@@ -82,6 +82,7 @@ func main() {
 	checkErr(err)
 	nodeconfig, err := node.BuildKubernetesNodeConfig(*nconfig, false, false)
 	checkErr(err)
+	// nodeconfig.Containerized = true
 	provider, ns, err := scc.CreateProviderFromConstraint(ns.Name, ns, sccn, nodeconfig.Client)
 	checkErr(err)
 	err = os.RemoveAll(etcdt.DataDir)
@@ -139,10 +140,15 @@ func main() {
 	fmt.Printf("%#v\n\n", podl[0])
 	fmt.Printf("%#v\n\n", podl[0].Spec.Containers[0])
 	fmt.Printf("%#v\n\n", podl[0].Spec.Containers[0].SecurityContext)
+	fmt.Printf("%#v\n\n", nodeconfig)
 
-	knode, err := k.GetNode()
-	fmt.Printf("%#v\n\n", knode.Status.Allocatable)
-	checkErr(err)
+	//tcv1 := &v1Pod.Spec.Containers[0]
+	//knodeconfig, _, err := k.GenerateRunContainerOptions(v1Pod, tcv1, "")
+	//checkErr(err)
+	//fmt.Printf("%#v\n\n", knodeconfig)
+	// knode, err := k.GetNode()
+	// fmt.Printf("%#v\n\n", knode.Status.Allocatable)
+	// checkErr(err)
 	// k.HandlePodAdditions(podl)
 
 	fmt.Printf("Using %#v scc...\n\n", provider.GetSCCName())
