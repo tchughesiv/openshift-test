@@ -113,15 +113,15 @@ func main() {
 
 	fmt.Printf("\n")
 
-	// klConfig := k.GetConfiguration()
-	// fmt.Printf("%#v\n\n", klConfig)
+	kruntime := k.GetRuntime()
+	// kconfig := k.GetConfiguration()
 
-	runtime := k.GetRuntime()
-	// fmt.Printf("%#v\n\n", runtime)
+	// fmt.Printf("%#v\n\n", kconfig)
+	// fmt.Printf("%#v\n\n", kruntime)
 
 	/*
 		var secret []v1.Secret
-		pi, err := runtime.PullImage(container.ImageSpec{
+		pi, err := kruntime.PullImage(container.ImageSpec{
 			Image: v1Pod.Spec.Containers[0].Image,
 		}, secret)
 		checkErr(err)
@@ -129,36 +129,21 @@ func main() {
 		fmt.Printf("%#v\n\n", pi)
 	*/
 
-	imagelist, err := runtime.ListImages()
+	imagelist, err := kruntime.ListImages()
 	checkErr(err)
 	fmt.Printf("%#v\n\n", imagelist)
 
 	podl, err := k.GetRunningPods()
 	checkErr(err)
-	fmt.Printf("%#v\n\n", podl)
-
 	podl = append(podl, v1Pod)
-	fmt.Printf("%#v\n\n", podl)
 	fmt.Printf("%#v\n\n", podl[0])
 	fmt.Printf("%#v\n\n", podl[0].Spec.Containers[0])
+	fmt.Printf("%#v\n\n", podl[0].Spec.Containers[0].SecurityContext)
+
+	knode, err := k.GetNode()
+	fmt.Printf("%#v\n\n", knode.Status.Allocatable)
+	checkErr(err)
 	// k.HandlePodAdditions(podl)
 
-	/*
-		klclient := k.GetKubeClient()
-		di := klclient.Apps().Deployments(ns.Name)
-		dl, err := di.List(metav1.ListOptions{})
-		checkErr(err)
-		fmt.Printf("%#v\n\n", dl)
-	*/
-
-	// ?? reference for container runtime -
-	// vendor/github.com/openshift/origin/vendor/k8s.io/kubernetes/pkg/kubelet/kubelet.go
-	// vendor/github.com/openshift/origin/vendor/k8s.io/kubernetes/pkg/kubectl/run_test.go
-	// kubectl run reference: https://github.com/openshift/kubernetes/blob/openshift-1.6-20170501/pkg/kubectl/run_test.go
-	// dockertools.NewDockerManager()
-	// dockerRun(tc.Image, dockerVersion)
-
-	// fmt.Printf("%#v\n\n", podl[0].Spec.Containers[0].Name)
-	fmt.Printf("%#v\n\n", podl[0].Spec.Containers[0].SecurityContext)
 	fmt.Printf("Using %#v scc...\n\n", provider.GetSCCName())
 }
