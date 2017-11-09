@@ -10,20 +10,18 @@
 
 ```shell
 $ go get -d github.com/tchughesiv/sccoc
+$ mkdir -p $GOPATH/src/github.com/openshift
+$ ln -s $GOPATH/src/github.com/tchughesiv/sccoc $GOPATH/src/github.com/openshift/origin
 $ cd $GOPATH/src/github.com/tchughesiv/sccoc/
-# $ glide up
+$ git submodule update --init
+$ go build
+# $ go run sccoc.go
 ```
 
 dev
 ```shell
-$ git submodule add -f https://github.com/openshift/origin
-$ cd ./origin/
-$ git checkout v3.6.1 # 008f2d5528bf998326b5eb3f1fe3144c59392b9d
-$ cd $GOPATH/src/github.com/tchughesiv/sccoc/
+$ git submodule add -f -b release-3.6 https://github.com/openshift/origin
 $ ln -s ./origin/vendor
-# $ git submodule add -f https://github.com/openshift/kubernetes-client-go ./vendor/k8s.io/client-go
-# $ git submodule add -f https://github.com/juju/ratelimit ./vendor/github.com/juju/ratelimit
-# $ git submodule add -f https://github.com/openshift/kubernetes ./vendor/k8s.io/kubernetes
-# $ cd ./vendor/k8s.io/kubernetes
-# $ git checkout fff65cf41bdeeaff9964af98450b254f3f2da553 
+$ ln -s ./origin/pkg
+$ ln -s ./origin/test
 ```
