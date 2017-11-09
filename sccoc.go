@@ -105,6 +105,7 @@ func main() {
 
 	kserver := nodeconfig.KubeletServer
 	kubeCfg := &kserver.KubeletConfiguration
+	kubeCfg.PodManifestPath = "/tmp/openshift-integration/volume/manifests"
 	// kubeCfg.ContainerRuntime = "docker"
 	kubeDeps := nodeconfig.KubeletDeps
 
@@ -115,10 +116,12 @@ func main() {
 	}
 
 	// nodeconfig.RunKubelet()
+
 	err = app.RunKubelet(kubeCfg, kubeDeps, false, true, kserver.DockershimRootDirectory)
 	checkErr(err)
 
 	fmt.Printf("\n")
+	fmt.Printf("%#v\n\n", kubeCfg.PodManifestPath)
 
 	/*
 		k, err := kubelet.NewMainKubelet(kubeCfg, kubeDeps, true, kserver.DockershimRootDirectory)
@@ -130,7 +133,6 @@ func main() {
 		fmt.Printf("%#v\n\n", podl[0])
 		fmt.Printf("%#v\n\n", podl[0].Spec.Containers[0])
 		fmt.Printf("%#v\n\n", podl[0].Spec.Containers[0].SecurityContext)
-		fmt.Printf("%#v\n\n", kserver.RootDirectory)
 
 		kruntime := k.GetRuntime()
 		imagelist, err := kruntime.ListImages()
