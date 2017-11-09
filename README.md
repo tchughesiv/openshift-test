@@ -4,13 +4,33 @@
 
 [wip] openshift scc image test tool
 
- - relies on Origin release-3.6 # ?? v3.6.0
+ - relies on Origin release-3.6 as a submodule
 
 ### Getting started
 
+build
 ```shell
-$ go get -d github.com/tchughesiv/sccoc
-$ cd $GOPATH/src/github.com/tchughesiv/sccoc/
-$ glide install
-# $ glide up
+$ git clone https://github.com/tchughesiv/sccoc $GOPATH/src/github.com/openshift/origin
+# alternatively could... 
+# $ go get -d github.com/tchughesiv/sccoc
+# $ mkdir -p $GOPATH/src/github.com/openshift
+# $ ln -s $GOPATH/src/github.com/tchughesiv/sccoc $GOPATH/src/github.com/openshift/origin
+$ cd $GOPATH/src/github.com/openshift/origin/
+$ git submodule update --init
+$ go build -o sccoc
+```
+
+dev
+```shell
+$ git submodule add -f -b release-3.6 https://github.com/openshift/origin
+$ ln -s ./origin/vendor
+$ ln -s ./origin/pkg
+$ ln -s ./origin/test
+```
+
+??? other notes
+```shell
+# git clone -b release-3.6 https://github.com/openshift/origin $GOPATH/src/github.com/openshift/origin
+# cd $GOPATH/src/github.com/openshift/origin
+# ./hack/godep-restore.sh
 ```

@@ -1,8 +1,0 @@
-package: github.com/tchughesiv/sccoc
-import:
-- package: github.com/openshift/origin
-  version: release-3.6 # ?? v3.6.0
-- package: k8s.io/kubernetes
-  repo: https://github.com/openshift/kubernetes
-- package: github.com/Azure/go-autorest
-  version: v8.4.0
