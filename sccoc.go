@@ -157,8 +157,6 @@ func main() {
 				Op:     kubetypes.ADD,
 				Source: kubetypes.AllSource,
 			}
-		// k.BirthCry()
-		// k.StartGarbageCollection()
 
 		runresult, err := k.RunOnce(updates)
 		checkErr(err)
@@ -166,7 +164,6 @@ func main() {
 
 		fmt.Printf("%#v\n\n", k.GetActivePods())
 	*/
-	// k.GetNodeConfig().ContainerRuntime
 
 	fmt.Printf("Using %#v scc...\n\n", provider.GetSCCName())
 }
