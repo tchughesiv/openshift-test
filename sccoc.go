@@ -7,13 +7,14 @@ import (
 	"testing"
 
 	bp "github.com/openshift/origin/pkg/cmd/server/bootstrappolicy"
+	"github.com/openshift/origin/pkg/generate/app"
+	imageapi "github.com/openshift/origin/pkg/image/apis/image"
 	projectapi "github.com/openshift/origin/pkg/project/apis/project"
 	allocator "github.com/openshift/origin/pkg/security"
 	admtesting "github.com/openshift/origin/pkg/security/admission/testing"
 	securityapi "github.com/openshift/origin/pkg/security/apis/security"
 	testutil "github.com/openshift/origin/test/util"
 	testserver "github.com/openshift/origin/test/util/server"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // command options/description reference ???
@@ -21,7 +22,7 @@ import (
 
 func main() {
 	defaultScc := "restricted"
-	//	defaultImage := "docker.io/centos:latest"
+	defaultImage := "docker.io/centos:latest"
 	var t *testing.T
 	var sccopts []string
 	var sccn *securityapi.SecurityContextConstraints
@@ -109,23 +110,34 @@ func main() {
 	checkErr(err)
 
 	dccl := cac.DeploymentConfigs(proj.Name)
-	dc, err := dccl.Generate("tmp")
-	checkErr(err)
+	// dc, err := dccl.Generate("tmp")
+	// scheckErr(err)
 
-	images, err := cac.ImageStreams(proj.Name).List(metav1.ListOptions{})
-	checkErr(err)
+	// images, err := cac.ImageStreams(proj.Name).List(metav1.ListOptions{})
+	//checkErr(err)
 
-	dc.Name = "test"
-	// dc.Spec.Template.Spec.Containers = testpod.Spec.Containers
-	sel := make(map[string]string)
-	sel["name"] = "test"
-	dc.Spec.Selector = sel
-	dc, err = dccl.Create(dc)
+	output := &app.ImageRef{
+		Reference: imageapi.DockerImageReference{
+			Name: defaultImage,
+		},
+		AsImageStream: true,
+	}
+	// create our build based on source and input
+	// TODO: we might need to pick a base image if this is STI
+	// build := &BuildRef{Source: source, Output: output}
+	// take the output image and wire it into a deployment config
+	deploy := &app.DeploymentConfigRef{Images: []*app.ImageRef{output}}
+
+	//outputRepo, _ := output.ImageStream()
+	//buildConfig, _ := build.BuildConfig()
+	deployConfig, _ := deploy.DeploymentConfig()
+
+	deployConfig, err = dccl.Create(deployConfig)
 	checkErr(err)
 
 	// fmt.Printf("Using %#v scc...\n\n", provider.GetSCCName())
 	fmt.Printf("\n")
-	fmt.Printf("%#v\n\n", images.Items)
+	fmt.Printf("%#v\n\n", deployConfig)
 
 	checkErr(os.RemoveAll(etcdt.DataDir))
 }
