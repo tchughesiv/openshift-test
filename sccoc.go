@@ -21,22 +21,7 @@ import (
 	"k8s.io/kubernetes/pkg/kubelet/cadvisor"
 )
 
-func checkErr(err error) {
-	if err != nil {
-		log.Println(err)
-	}
-}
-
-func contains(sccopts []string, defaultScc string) bool {
-	for _, a := range sccopts {
-		if a == defaultScc {
-			return true
-		}
-	}
-	return false
-}
-
-// command options/description reference:
+// command options/description reference ???
 // https://github.com/openshift/origin/blob/release-3.6/pkg/cmd/cli/cli.go
 
 func main() {
@@ -123,7 +108,7 @@ func main() {
 	// !!! vendoring issues w/ kubelet packages
 	// vendor/k8s.io/kubernetes/vendor/k8s.io/client-go/util/flowcontrol/throttle.go:59: undefined: ratelimit.Clock
 
-	// try "startkubelet" instead?
+	// try "startkubelet" instead? couldn't call it...
 	err = app.RunKubelet(kubeCfg, kubeDeps, false, true, kserver.DockershimRootDirectory)
 	checkErr(err)
 
@@ -183,4 +168,19 @@ func main() {
 	// k.GetNodeConfig().ContainerRuntime
 
 	fmt.Printf("Using %#v scc...\n\n", provider.GetSCCName())
+}
+
+func checkErr(err error) {
+	if err != nil {
+		log.Println(err)
+	}
+}
+
+func contains(sccopts []string, defaultScc string) bool {
+	for _, a := range sccopts {
+		if a == defaultScc {
+			return true
+		}
+	}
+	return false
 }
