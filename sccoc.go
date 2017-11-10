@@ -22,7 +22,7 @@ import (
 
 func main() {
 	defaultScc := "restricted"
-	defaultImage := "docker.io/centos:latest"
+	defaultImage := "centos"
 	var t *testing.T
 	var sccopts []string
 	var sccn *securityapi.SecurityContextConstraints
@@ -118,7 +118,8 @@ func main() {
 
 	output := &app.ImageRef{
 		Reference: imageapi.DockerImageReference{
-			Name: defaultImage,
+			Registry: "docker.io",
+			Name:     defaultImage,
 		},
 		AsImageStream: true,
 	}
@@ -127,11 +128,10 @@ func main() {
 	// build := &BuildRef{Source: source, Output: output}
 	// take the output image and wire it into a deployment config
 	deploy := &app.DeploymentConfigRef{Images: []*app.ImageRef{output}}
-
 	//outputRepo, _ := output.ImageStream()
 	//buildConfig, _ := build.BuildConfig()
 	deployConfig, _ := deploy.DeploymentConfig()
-
+	deployConfig.Spec.Replicas = int32(1)
 	deployConfig, err = dccl.Create(deployConfig)
 	checkErr(err)
 
