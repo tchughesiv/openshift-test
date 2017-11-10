@@ -206,6 +206,7 @@ func main() {
 	for _, d := range list.Items {
 		fmt.Printf(" * %s (%d replicas)\n", d.Name, *d.Spec.Replicas)
 	}
+	fmt.Printf("\n")
 
 	err = os.RemoveAll(etcdt.DataDir)
 	checkErr(err)
