@@ -123,13 +123,14 @@ func main() {
 		},
 		AsImageStream: true,
 	}
+
 	// create our build based on source and input
 	// TODO: we might need to pick a base image if this is STI
 	// build := &BuildRef{Source: source, Output: output}
+	// outputRepo, _ := output.ImageStream()
+	// buildConfig, _ := build.BuildConfig()
 	// take the output image and wire it into a deployment config
 	deploy := &app.DeploymentConfigRef{Images: []*app.ImageRef{output}}
-	//outputRepo, _ := output.ImageStream()
-	//buildConfig, _ := build.BuildConfig()
 	deployConfig, _ := deploy.DeploymentConfig()
 	deployConfig.Spec.Replicas = int32(1)
 	deployConfig, err = dccl.Create(deployConfig)
