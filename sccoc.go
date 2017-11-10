@@ -114,6 +114,7 @@ func main() {
 
 	fmt.Printf("\n")
 	fmt.Printf("%#v\n\n", kubeDeps.PodConfig)
+	//kubeDeps.PodConfig.Sync()
 
 	/*
 		k, err := kubelet.NewMainKubelet(kubeCfg, kubeDeps, true, kserver.DockershimRootDirectory)
@@ -122,6 +123,7 @@ func main() {
 		podl, err := k.GetRunningPods()
 		checkErr(err)
 		podl = append(podl, v1Pod)
+
 		fmt.Printf("%#v\n\n", podl[0])
 		fmt.Printf("%#v\n\n", podl[0].Spec.Containers[0])
 		fmt.Printf("%#v\n\n", podl[0].Spec.Containers[0].SecurityContext)
@@ -130,9 +132,9 @@ func main() {
 		imagelist, err := kruntime.ListImages()
 		checkErr(err)
 		fmt.Printf("%#v\n\n", imagelist)
-	*/
-	// k.HandlePodAdditions(podl)
 
+		k.HandlePodAdditions(podl)
+	*/
 	/*
 		k, err := app.CreateAndInitKubelet(kubeCfg, kubeDeps, true, kserver.DockershimRootDirectory)
 
