@@ -113,6 +113,7 @@ func main() {
 	checkErr(err)
 
 	fmt.Printf("\n")
+	fmt.Printf("%#v\n\n", kubeDeps.PodConfig)
 
 	/*
 		k, err := kubelet.NewMainKubelet(kubeCfg, kubeDeps, true, kserver.DockershimRootDirectory)
