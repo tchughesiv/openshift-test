@@ -15,9 +15,12 @@ import (
 	"github.com/openshift/origin/pkg/security/scc"
 	testutil "github.com/openshift/origin/test/util"
 	testserver "github.com/openshift/origin/test/util/server"
-	"k8s.io/client-go/tools/record"
-	"k8s.io/kubernetes/cmd/kubelet/app"
-	"k8s.io/kubernetes/pkg/api/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
+	//	"k8s.io/kubernetes/pkg/api/v1"
+	v1 "k8s.io/client-go/pkg/api/v1"
 	"k8s.io/kubernetes/pkg/kubelet/cadvisor"
 )
 
@@ -63,36 +66,42 @@ func main() {
 
 	// How can supress the "startup" logs????
 	etcdt := testutil.RequireEtcd(t)
-	_, nconfig, _, err := testserver.DefaultAllInOneOptions()
+	mconfig, nconfig, components, err := testserver.DefaultAllInOneOptions()
 	checkErr(err)
+
 	nodeconfig, err := node.BuildKubernetesNodeConfig(*nconfig, false, false)
 	checkErr(err)
 	// nodeconfig.Containerized = true
 
 	kserver := nodeconfig.KubeletServer
-	kubeCfg := &kserver.KubeletConfiguration
-	// kubeCfg.ContainerRuntime = "docker"
+	// kubeCfg := &kserver.KubeletConfiguration
 	kubeDeps := nodeconfig.KubeletDeps
-	kubeDeps.Recorder = record.NewFakeRecorder(100)
 	if kubeDeps.CAdvisorInterface == nil {
 		kubeDeps.CAdvisorInterface, err = cadvisor.New(uint(kserver.CAdvisorPort), kserver.ContainerRuntime, kserver.RootDirectory)
 		checkErr(err)
 	}
+	// kubeCfg.ContainerRuntime = "docker"
+	// kubeDeps.Recorder = record.NewFakeRecorder(100)
 
 	// requires higher max user watches for file method...
 	// sudo sysctl fs.inotify.max_user_watches=524288
 	// make the change permanent, edit the file /etc/sysctl.conf and add the line to the end of the file
-	kubeCfg.PodManifestPath = kserver.RootDirectory + "/manifests"
-	if _, err := os.Stat(kserver.RootDirectory); os.IsNotExist(err) {
-		os.Mkdir(kserver.RootDirectory, 0755)
-	}
-	if _, err := os.Stat(kubeCfg.PodManifestPath); os.IsNotExist(err) {
-		os.Mkdir(kubeCfg.PodManifestPath, 0750)
-	}
+	// kubeCfg.PodManifestPath = kserver.RootDirectory + "/manifests"
+	//pm := nconfig.PodManifestConfig
+	//pm.Path = kubeCfg.PodManifestPath
+	/*
+		if _, err := os.Stat(kserver.RootDirectory); os.IsNotExist(err) {
+			os.Mkdir(kserver.RootDirectory, 0755)
+		}
+		if _, err := os.Stat(kubeCfg.PodManifestPath); os.IsNotExist(err) {
+			os.Mkdir(kubeCfg.PodManifestPath, 0750)
+		}
+	*/
+	cfile, err := testserver.StartConfiguredAllInOne(mconfig, nconfig, components)
+	// _, nconfig, cfile, err := testserver.StartTestAllInOne()
+	checkErr(err)
 
 	provider, ns, err := scc.CreateProviderFromConstraint(ns.Name, ns, sccn, nodeconfig.Client)
-	checkErr(err)
-	err = os.RemoveAll(etcdt.DataDir)
 	checkErr(err)
 
 	// !! can go straight k8s from here on out...
@@ -101,73 +110,69 @@ func main() {
 	tc.SecurityContext, err = provider.CreateContainerSecurityContext(testpod, tc)
 	checkErr(err)
 
-	v1Pod := &v1.Pod{}
-	err = v1.Convert_api_Pod_To_v1_Pod(testpod, v1Pod, nil)
-	checkErr(err)
+	//	v1Pod := &v1.Pod{}
+	//	err = v1.Convert_api_Pod_To_v1_Pod(testpod, v1Pod, nil)
+	//	checkErr(err)
 
 	// !!! vendoring issues w/ kubelet packages
 	// vendor/k8s.io/kubernetes/vendor/k8s.io/client-go/util/flowcontrol/throttle.go:59: undefined: ratelimit.Clock
-
 	// try "startkubelet" instead? couldn't call it...
-	err = app.RunKubelet(kubeCfg, kubeDeps, false, true, kserver.DockershimRootDirectory)
-	checkErr(err)
+	//err = app.RunKubelet(kubeCfg, kubeDeps, false, true, kserver.DockershimRootDirectory)
+	//checkErr(err)
 
 	fmt.Printf("\n")
-	fmt.Printf("%#v\n\n", kubeDeps.PodConfig)
-	//kubeDeps.PodConfig.Sync()
 
-	/*
-		k, err := kubelet.NewMainKubelet(kubeCfg, kubeDeps, true, kserver.DockershimRootDirectory)
-		checkErr(err)
+	// use the current context in kubeconfig
+	config, err := clientcmd.BuildConfigFromFlags("", cfile)
+	if err != nil {
+		panic(err.Error())
+	}
 
-		podl, err := k.GetRunningPods()
-		checkErr(err)
-		podl = append(podl, v1Pod)
+	// create the clientset
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		panic(err.Error())
+	}
 
-		fmt.Printf("%#v\n\n", podl[0])
-		fmt.Printf("%#v\n\n", podl[0].Spec.Containers[0])
-		fmt.Printf("%#v\n\n", podl[0].Spec.Containers[0].SecurityContext)
+	nsn := &v1.Namespace{}
+	nsn.Name = ns.Name
+	nsn.Annotations = ns.Annotations
 
-		kruntime := k.GetRuntime()
-		imagelist, err := kruntime.ListImages()
-		checkErr(err)
-		fmt.Printf("%#v\n\n", imagelist)
+	nsn, err = clientset.CoreV1().Namespaces().Create(nsn)
+	checkErr(err)
 
-		k.HandlePodAdditions(podl)
-	*/
-	/*
-		k, err := app.CreateAndInitKubelet(kubeCfg, kubeDeps, true, kserver.DockershimRootDirectory)
+	v1Pod := &v1.Pod{}
+	v1Pod.Name = testpod.Name
 
-		// kconfig := k.GetConfiguration()
+	_, err = clientset.CoreV1().Pods(nsn.Name).Create(v1Pod)
+	checkErr(err)
 
-			var secret []v1.Secret
-			pi, err := kruntime.PullImage(container.ImageSpec{
-				Image: v1Pod.Spec.Containers[0].Image,
-			}, secret)
-			checkErr(err)
-			fmt.Printf("\n")
-			fmt.Printf("%#v\n\n", pi)
+	pods, err := clientset.CoreV1().Pods("").List(metav1.ListOptions{})
+	if err != nil {
+		panic(err.Error())
+	}
 
-		imagelist, err := kruntime.ListImages()
-		checkErr(err)
-		fmt.Printf("%#v\n\n", imagelist)
+	// Examples for error handling:
+	// - Use helper functions like e.g. errors.IsNotFound()
+	// - And/or cast to StatusError and use its properties like e.g. ErrStatus.Message
+	_, err = clientset.CoreV1().Pods("default").Get("example-xxxxx", metav1.GetOptions{})
+	if errors.IsNotFound(err) {
+		fmt.Printf("Pod not found\n")
+	} else if statusError, isStatus := err.(*errors.StatusError); isStatus {
+		fmt.Printf("Error getting pod %v\n", statusError.ErrStatus.Message)
+	} else if err != nil {
+		panic(err.Error())
+	} else {
+		fmt.Printf("Found pod\n")
+	}
 
+	//	time.Sleep(10 * time.Second)
 
-		var updates <-chan kubetypes.PodUpdate
-			updates <- kubetypes.PodUpdate{
-				Pods:   podl,
-				Op:     kubetypes.ADD,
-				Source: kubetypes.AllSource,
-			}
-
-		runresult, err := k.RunOnce(updates)
-		checkErr(err)
-		fmt.Printf("\n%#v\n\n", runresult)
-
-		fmt.Printf("%#v\n\n", k.GetActivePods())
-	*/
+	err = os.RemoveAll(etcdt.DataDir)
+	checkErr(err)
 
 	fmt.Printf("Using %#v scc...\n\n", provider.GetSCCName())
+	fmt.Printf("There are %d pods in the cluster\n\n", len(pods.Items))
 }
 
 func checkErr(err error) {
@@ -184,3 +189,66 @@ func contains(sccopts []string, defaultScc string) bool {
 	}
 	return false
 }
+
+/*
+	for {
+		conn, err := net.DialTimeout("tcp", net.JoinHostPort("127.0.0.1", "10250"), 10*time.Second)
+		if conn != nil {
+			conn.Close()
+			fmt.Printf("Server up on \n\n")
+		}
+		checkErr(err)
+	}
+*/
+//kubeDeps.PodConfig.Sync()
+
+/*
+	k, err := kubelet.NewMainKubelet(kubeCfg, kubeDeps, true, kserver.DockershimRootDirectory)
+	checkErr(err)
+
+	podl, err := k.GetRunningPods()
+	checkErr(err)
+	podl = append(podl, v1Pod)
+
+	fmt.Printf("%#v\n\n", podl[0])
+	fmt.Printf("%#v\n\n", podl[0].Spec.Containers[0])
+	fmt.Printf("%#v\n\n", podl[0].Spec.Containers[0].SecurityContext)
+
+	kruntime := k.GetRuntime()
+	imagelist, err := kruntime.ListImages()
+	checkErr(err)
+	fmt.Printf("%#v\n\n", imagelist)
+
+	k.HandlePodAdditions(podl)
+*/
+/*
+	k, err := app.CreateAndInitKubelet(kubeCfg, kubeDeps, true, kserver.DockershimRootDirectory)
+
+	// kconfig := k.GetConfiguration()
+
+		var secret []v1.Secret
+		pi, err := kruntime.PullImage(container.ImageSpec{
+			Image: v1Pod.Spec.Containers[0].Image,
+		}, secret)
+		checkErr(err)
+		fmt.Printf("\n")
+		fmt.Printf("%#v\n\n", pi)
+
+	imagelist, err := kruntime.ListImages()
+	checkErr(err)
+	fmt.Printf("%#v\n\n", imagelist)
+
+
+	var updates <-chan kubetypes.PodUpdate
+		updates <- kubetypes.PodUpdate{
+			Pods:   podl,
+			Op:     kubetypes.ADD,
+			Source: kubetypes.AllSource,
+		}
+
+	runresult, err := k.RunOnce(updates)
+	checkErr(err)
+	fmt.Printf("\n%#v\n\n", runresult)
+
+	fmt.Printf("%#v\n\n", k.GetActivePods())
+*/
