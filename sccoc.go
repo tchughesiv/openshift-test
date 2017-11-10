@@ -8,19 +8,20 @@ import (
 
 	bp "github.com/openshift/origin/pkg/cmd/server/bootstrappolicy"
 	"github.com/openshift/origin/pkg/cmd/server/kubernetes/node"
-	"github.com/openshift/origin/pkg/diagnostics/network"
 	allocator "github.com/openshift/origin/pkg/security"
 	admtesting "github.com/openshift/origin/pkg/security/admission/testing"
 	securityapi "github.com/openshift/origin/pkg/security/apis/security"
-	"github.com/openshift/origin/pkg/security/scc"
 	testutil "github.com/openshift/origin/test/util"
 	testserver "github.com/openshift/origin/test/util/server"
+	// appsv1beta1 "k8s.io/api/apps/v1beta1"
+	// apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	//	"k8s.io/kubernetes/pkg/api/v1"
-	v1 "k8s.io/client-go/pkg/api/v1"
+	"k8s.io/client-go/pkg/api/v1"
+	"k8s.io/client-go/pkg/apis/apps/v1beta1"
 	"k8s.io/kubernetes/pkg/kubelet/cadvisor"
 )
 
@@ -29,10 +30,11 @@ import (
 
 func main() {
 	defaultScc := "restricted"
-	defaultImage := "docker.io/centos:latest"
+	// defaultImage := "docker.io/centos:latest"
 	var t *testing.T
 	var sccopts []string
 	var sccn *securityapi.SecurityContextConstraints
+	_ = sccn
 
 	if len(os.Args) > 1 {
 		defaultScc = os.Args[len(os.Args)-1]
@@ -101,14 +103,14 @@ func main() {
 	// _, nconfig, cfile, err := testserver.StartTestAllInOne()
 	checkErr(err)
 
-	provider, ns, err := scc.CreateProviderFromConstraint(ns.Name, ns, sccn, nodeconfig.Client)
-	checkErr(err)
+	// provider, ns, err := scc.CreateProviderFromConstraint(ns.Name, ns, sccn, nodeconfig.Client)
+	// checkErr(err)
 
 	// !! can go straight k8s from here on out...
-	testpod := network.GetTestPod(defaultImage, "tcp", "tmp", "localhost", 12000)
-	tc := &testpod.Spec.Containers[0]
-	tc.SecurityContext, err = provider.CreateContainerSecurityContext(testpod, tc)
-	checkErr(err)
+	//testpod := network.GetTestPod(defaultImage, "tcp", "tmp", "localhost", 12000)
+	//tc := &testpod.Spec.Containers[0]
+	//tc.SecurityContext, err = provider.CreateContainerSecurityContext(testpod, tc)
+	//checkErr(err)
 
 	//	v1Pod := &v1.Pod{}
 	//	err = v1.Convert_api_Pod_To_v1_Pod(testpod, v1Pod, nil)
@@ -120,8 +122,6 @@ func main() {
 	//err = app.RunKubelet(kubeCfg, kubeDeps, false, true, kserver.DockershimRootDirectory)
 	//checkErr(err)
 
-	fmt.Printf("\n")
-
 	// use the current context in kubeconfig
 	config, err := clientcmd.BuildConfigFromFlags("", cfile)
 	if err != nil {
@@ -130,9 +130,7 @@ func main() {
 
 	// create the clientset
 	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		panic(err.Error())
-	}
+	checkErr(err)
 
 	nsn := &v1.Namespace{}
 	nsn.Name = ns.Name
@@ -141,21 +139,55 @@ func main() {
 	nsn, err = clientset.CoreV1().Namespaces().Create(nsn)
 	checkErr(err)
 
-	v1Pod := &v1.Pod{}
-	v1Pod.Name = testpod.Name
+	deploymentsClient := clientset.Apps().Deployments(nsn.Name)
 
-	_, err = clientset.CoreV1().Pods(nsn.Name).Create(v1Pod)
-	checkErr(err)
-
-	pods, err := clientset.CoreV1().Pods("").List(metav1.ListOptions{})
-	if err != nil {
-		panic(err.Error())
+	deployment := &v1beta1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "demo-deployment",
+		},
+		Spec: v1beta1.DeploymentSpec{
+			Replicas: int32Ptr(1),
+			Template: v1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						"app": "demo",
+					},
+				},
+				Spec: v1.PodSpec{
+					Containers: []v1.Container{
+						{
+							Name:  "web",
+							Image: "nginx:1.12",
+							Ports: []v1.ContainerPort{
+								{
+									Name:          "http",
+									Protocol:      v1.ProtocolTCP,
+									ContainerPort: 80,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
+
+	// Create Deployment
+	fmt.Println("Creating deployment...")
+	result, err := deploymentsClient.Create(deployment)
+	checkErr(err)
+	fmt.Printf("Created deployment %q.\n", result.GetObjectMeta().GetName())
+
+	//_, err = clientset.CoreV1().Pods(nsn.Name).Create(v1Pod)
+	//checkErr(err)
+
+	//pods, err := clientset.CoreV1().Pods(nsn.Name).List(metav1.ListOptions{})
+	//checkErr(err)
 
 	// Examples for error handling:
 	// - Use helper functions like e.g. errors.IsNotFound()
 	// - And/or cast to StatusError and use its properties like e.g. ErrStatus.Message
-	_, err = clientset.CoreV1().Pods("default").Get("example-xxxxx", metav1.GetOptions{})
+	_, err = clientset.CoreV1().Pods(nsn.Name).Get("web", metav1.GetOptions{})
 	if errors.IsNotFound(err) {
 		fmt.Printf("Pod not found\n")
 	} else if statusError, isStatus := err.(*errors.StatusError); isStatus {
@@ -168,11 +200,18 @@ func main() {
 
 	//	time.Sleep(10 * time.Second)
 
+	list, err := deploymentsClient.List(metav1.ListOptions{})
+	checkErr(err)
+	fmt.Printf("\n")
+	for _, d := range list.Items {
+		fmt.Printf(" * %s (%d replicas)\n", d.Name, *d.Spec.Replicas)
+	}
+
 	err = os.RemoveAll(etcdt.DataDir)
 	checkErr(err)
 
-	fmt.Printf("Using %#v scc...\n\n", provider.GetSCCName())
-	fmt.Printf("There are %d pods in the cluster\n\n", len(pods.Items))
+	// fmt.Printf("Using %#v scc...\n\n", provider.GetSCCName())
+	// fmt.Printf("There are %d pods in the cluster\n\n", len(pods.Items))
 }
 
 func checkErr(err error) {
@@ -189,6 +228,8 @@ func contains(sccopts []string, defaultScc string) bool {
 	}
 	return false
 }
+
+func int32Ptr(i int32) *int32 { return &i }
 
 /*
 	for {
