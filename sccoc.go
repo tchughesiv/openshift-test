@@ -82,8 +82,28 @@ func main() {
 	checkErr(err)
 	nodeconfig, err := node.BuildKubernetesNodeConfig(*nconfig, false, false)
 	checkErr(err)
+	// nodeconfig.Containerized = true
 
-	nodeconfig.Containerized = true
+	kserver := nodeconfig.KubeletServer
+	kubeCfg := &kserver.KubeletConfiguration
+	// kubeCfg.ContainerRuntime = "docker"
+	kubeDeps := nodeconfig.KubeletDeps
+	kubeDeps.Recorder = record.NewFakeRecorder(100)
+	if kubeDeps.CAdvisorInterface == nil {
+		kubeDeps.CAdvisorInterface, err = cadvisor.New(uint(kserver.CAdvisorPort), kserver.ContainerRuntime, kserver.RootDirectory)
+		checkErr(err)
+	}
+
+	// requires higher max user watches for file method...
+	// sudo sysctl fs.inotify.max_user_watches=524288
+	// make the change permanent, edit the file /etc/sysctl.conf and add the line to the end of the file
+	kubeCfg.PodManifestPath = kserver.RootDirectory + "/manifests"
+	if _, err := os.Stat(kserver.RootDirectory); os.IsNotExist(err) {
+		os.Mkdir(kserver.RootDirectory, 0755)
+	}
+	if _, err := os.Stat(kubeCfg.PodManifestPath); os.IsNotExist(err) {
+		os.Mkdir(kubeCfg.PodManifestPath, 0750)
+	}
 
 	provider, ns, err := scc.CreateProviderFromConstraint(ns.Name, ns, sccn, nodeconfig.Client)
 	checkErr(err)
@@ -103,25 +123,7 @@ func main() {
 	// !!! vendoring issues w/ kubelet packages
 	// vendor/k8s.io/kubernetes/vendor/k8s.io/client-go/util/flowcontrol/throttle.go:59: undefined: ratelimit.Clock
 
-	kserver := nodeconfig.KubeletServer
-	kubeCfg := &kserver.KubeletConfiguration
-	// kubeCfg.ContainerRuntime = "docker"
-	kubeDeps := nodeconfig.KubeletDeps
-
-	kubeDeps.Recorder = record.NewFakeRecorder(100)
-	if kubeDeps.CAdvisorInterface == nil {
-		kubeDeps.CAdvisorInterface, err = cadvisor.New(uint(kserver.CAdvisorPort), kserver.ContainerRuntime, kserver.RootDirectory)
-		checkErr(err)
-	}
-
-	// requires higher max user watches for file method...
-	// sudo sysctl fs.inotify.max_user_watches=524288
-	// make the change permanent, edit the file /etc/sysctl.conf and add the line to the end of the file
-	kubeCfg.PodManifestPath = kserver.RootDirectory + "/manifests"
-	if _, err := os.Stat(kubeCfg.PodManifestPath); os.IsNotExist(err) {
-		os.Mkdir(kubeCfg.PodManifestPath, 0750)
-	}
-
+	// try "startkubelet" instead?
 	err = app.RunKubelet(kubeCfg, kubeDeps, false, true, kserver.DockershimRootDirectory)
 	checkErr(err)
 
