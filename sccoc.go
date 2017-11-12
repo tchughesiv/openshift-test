@@ -6,9 +6,11 @@ import (
 	"os"
 	"testing"
 
+	"github.com/spf13/cobra"
+
+	"github.com/openshift/origin/pkg/bootstrap/docker/openshift"
+	"github.com/openshift/origin/pkg/cmd/cli"
 	bp "github.com/openshift/origin/pkg/cmd/server/bootstrappolicy"
-	"github.com/openshift/origin/pkg/generate/app"
-	imageapi "github.com/openshift/origin/pkg/image/apis/image"
 	projectapi "github.com/openshift/origin/pkg/project/apis/project"
 	allocator "github.com/openshift/origin/pkg/security"
 	admtesting "github.com/openshift/origin/pkg/security/admission/testing"
@@ -19,10 +21,13 @@ import (
 
 // command options/description reference ???
 // https://github.com/openshift/origin/blob/release-3.6/pkg/cmd/cli/cli.go
+// CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags '-w' -o sccoc
+
+// sccoc --scc=anyuid new-app alpine:latest
 
 func main() {
 	defaultScc := "restricted"
-	defaultImage := "centos"
+	//defaultImage := "docker.io/centos:latest"
 	var t *testing.T
 	var sccopts []string
 	var sccn *securityapi.SecurityContextConstraints
@@ -32,13 +37,7 @@ func main() {
 		defaultScc = os.Args[len(os.Args)-1]
 	}
 
-	ns := admtesting.CreateNamespaceForTest()
-	ns.Name = testutil.RandomNamespace("tmp")
-	ns.Annotations[allocator.UIDRangeAnnotation] = "1000100000/10000"
-	ns.Annotations[allocator.MCSAnnotation] = "s9:z0,z1"
-	ns.Annotations[allocator.SupplementalGroupsAnnotation] = "1000100000/10000"
-
-	groups, users := bp.GetBoostrapSCCAccess(ns.Name)
+	groups, users := bp.GetBoostrapSCCAccess(bp.DefaultOpenShiftInfraNamespace)
 	bootstrappedConstraints := bp.GetBootstrapSecurityContextConstraints(groups, users)
 	for _, v := range bootstrappedConstraints {
 		sccopts = append(sccopts, v.Name)
@@ -64,22 +63,10 @@ func main() {
 	mconfig, nconfig, components, err := testserver.DefaultAllInOneOptions()
 	checkErr(err)
 
-	/*
-		nodeconfig, err := node.BuildKubernetesNodeConfig(*nconfig, false, false)
-		checkErr(err)
-		// nodeconfig.Containerized = true
-
-		kserver := nodeconfig.KubeletServer
-		// kubeCfg := &kserver.KubeletConfiguration
-		kubeDeps := nodeconfig.KubeletDeps
-		if kubeDeps.CAdvisorInterface == nil {
-			kubeDeps.CAdvisorInterface, err = cadvisor.New(uint(kserver.CAdvisorPort), kserver.ContainerRuntime, kserver.RootDirectory)
-			checkErr(err)
-		}
-	*/
-
 	kconfig, err := testserver.StartConfiguredAllInOne(mconfig, nconfig, components)
 	cac, err := testutil.GetClusterAdminClient(kconfig)
+	checkErr(err)
+	kclient, err := testutil.GetClusterAdminKubeClient(kconfig)
 	checkErr(err)
 
 	// clusterAdminClientConfig, err := testutil.GetClusterAdminClientConfig(kconfig)
@@ -101,44 +88,62 @@ func main() {
 	//err = app.RunKubelet(kubeCfg, kubeDeps, false, true, kserver.DockershimRootDirectory)
 	//checkErr(err)
 
+	ns := admtesting.CreateNamespaceForTest()
+	ns.Name = testutil.RandomNamespace("tmp")
+	ns.Annotations[allocator.UIDRangeAnnotation] = "1000100000/10000"
+	ns.Annotations[allocator.MCSAnnotation] = "s9:z0,z1"
+	ns.Annotations[allocator.SupplementalGroupsAnnotation] = "1000100000/10000"
+
 	project := &projectapi.Project{}
 	project.Name = ns.Name
 	project.Annotations = ns.Annotations
 
 	projcl := cac.Projects()
-	proj, err := projcl.Create(project)
+	_, err = projcl.Create(project)
 	checkErr(err)
 
-	dccl := cac.DeploymentConfigs(proj.Name)
-	// dc, err := dccl.Generate("tmp")
-	// scheckErr(err)
-
-	// images, err := cac.ImageStreams(proj.Name).List(metav1.ListOptions{})
-	//checkErr(err)
-
-	output := &app.ImageRef{
-		Reference: imageapi.DockerImageReference{
-			Registry: "docker.io",
-			Name:     defaultImage,
-		},
-		AsImageStream: true,
-	}
-
-	// create our build based on source and input
-	// TODO: we might need to pick a base image if this is STI
-	// build := &BuildRef{Source: source, Output: output}
-	// outputRepo, _ := output.ImageStream()
-	// buildConfig, _ := build.BuildConfig()
-	// take the output image and wire it into a deployment config
-	deploy := &app.DeploymentConfigRef{Images: []*app.ImageRef{output}}
-	deployConfig, _ := deploy.DeploymentConfig()
-	deployConfig.Spec.Replicas = int32(1)
-	deployConfig, err = dccl.Create(deployConfig)
+	// modify scc settings accordingly
+	err = openshift.AddSCCToServiceAccount(kclient, defaultScc, bp.DefaultServiceAccountName, project.Name)
 	checkErr(err)
 
-	// fmt.Printf("Using %#v scc...\n\n", provider.GetSCCName())
+	// use new-app cmd to deploy specified image
+	var cmd *cobra.Command
+	in, out, errout := os.Stdin, os.Stdout, os.Stderr
+
+	cmd = cli.NewCommandCLI("sccoc", "sccoc", in, out, errout)
+	test := cmd.Commands()
 	fmt.Printf("\n")
-	fmt.Printf("%#v\n\n", deployConfig)
+	fmt.Printf("%#v\n\n", test)
+
+	/*
+		dccl := cac.DeploymentConfigs(proj.Name)
+		// dc, err := dccl.Generate("tmp")
+		// scheckErr(err)
+
+		// images, err := cac.ImageStreams(proj.Name).List(metav1.ListOptions{})
+		//checkErr(err)
+
+		output := &app.ImageRef{
+			Reference: imageapi.DockerImageReference{
+				Registry: "docker.io",
+				Name:     defaultImage,
+			},
+			AsImageStream: true,
+		}
+
+		// create our build based on source and input
+		// TODO: we might need to pick a base image if this is STI
+		// build := &BuildRef{Source: source, Output: output}
+		// outputRepo, _ := output.ImageStream()
+		// buildConfig, _ := build.BuildConfig()
+		// take the output image and wire it into a deployment config
+		deploy := &app.DeploymentConfigRef{Images: []*app.ImageRef{output}}
+		deployConfig, _ := deploy.DeploymentConfig()
+		deployConfig.Spec.Replicas = int32(1)
+		deployConfig, err = dccl.Create(deployConfig)
+		checkErr(err)
+	*/
+	// fmt.Printf("Using %#v scc...\n\n", provider.GetSCCName())
 
 	checkErr(os.RemoveAll(etcdt.DataDir))
 }
