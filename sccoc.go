@@ -114,9 +114,12 @@ func main() {
 
 	// fmt.Printf("\n")
 	fmt.Printf("Bearer Token %#v\n\n", adminconfig.BearerToken)
-	t := cac.OAuthAuthorizeTokens()
-	fmt.Printf("Bearer Token %#v\n\n", t)
-
+	/*
+		t := cac.OAuthAuthorizeTokens()
+		fmt.Printf("Bearer Token %#v\n\n", t)
+		t2 := cac.OAuthAccessTokens()
+		fmt.Printf("Bearer Token %#v\n\n", t2)
+	*/
 	// !! force connection to test server client instead
 	command := cli.CommandFor("sccoc")
 	//	login.RunLogin(command)
