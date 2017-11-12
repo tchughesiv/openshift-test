@@ -37,11 +37,11 @@ import (
 func main() {
 	var strFlag = flag.String("scc", "restricted", "Choose a valid Security Context Constraint")
 	flag.Parse()
-	println(*strFlag)
 
 	defaultScc := "restricted"
 	sflag := *strFlag
 	// remove flag here somehow??
+
 	var t *testing.T
 	var sccopts []string
 	var sccn *securityapi.SecurityContextConstraints
