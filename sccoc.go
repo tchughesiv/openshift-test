@@ -72,8 +72,8 @@ func main() {
 	checkErr(err)
 
 	kconfig, err := testserver.StartConfiguredAllInOne(mconfig, nconfig, components)
-	cac, err := testutil.GetClusterAdminClient(kconfig)
-	checkErr(err)
+	//cac, err := testutil.GetClusterAdminClient(kconfig)
+	//checkErr(err)
 	kclient, err := testutil.GetClusterAdminKubeClient(kconfig)
 	checkErr(err)
 
