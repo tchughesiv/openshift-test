@@ -79,6 +79,8 @@ func main() {
 	checkErr(err)
 	//cac, err := testutil.GetClusterAdminClient(kconfig)
 	//checkErr(err)
+	adminconfig, err := testutil.GetClusterAdminClientConfig(kconfig)
+	checkErr(err)
 
 	// modify scc settings accordingly
 	if sflag != defaultScc {
@@ -100,7 +102,6 @@ func main() {
 	}
 
 	// fmt.Printf("\n")
-	// fmt.Printf("%#v\n\n", proj)
 
 	// !!! reference https://github.com/openshift/origin/blob/release-3.6/cmd/oc/oc.go
 	logs.InitLogs()
@@ -114,7 +115,9 @@ func main() {
 	}
 
 	// !! force connection to test server client instead
+	fmt.Printf("%#v\n\n", adminconfig)
 	command := cli.CommandFor("sccoc")
+	//	login.RunLogin(command)
 	if err := command.Execute(); err != nil {
 		os.Exit(1)
 	}
