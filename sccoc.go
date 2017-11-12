@@ -31,11 +31,11 @@ import (
 )
 
 // CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags '-w' -o sccoc
-// sccoc --scc=anyuid new-app alpine:latest
-// sccoc --scc=anyuid new-app registry.centos.org/container-examples/starter-arbitrary-uid
+// sccoc -scc=anyuid new-app alpine:latest
+// sccoc -scc=anyuid new-app registry.centos.org/container-examples/starter-arbitrary-uid
 
 func main() {
-	var strFlag = flag.String("-scc", "restricted", "Choose a valid Security Context Constraint")
+	var strFlag = flag.String("scc", "restricted", "Choose a valid Security Context Constraint")
 	flag.Parse()
 	println(*strFlag)
 
