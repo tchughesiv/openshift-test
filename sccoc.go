@@ -6,7 +6,6 @@ import (
 	"log"
 	"math/rand"
 	"os"
-	"path/filepath"
 	"runtime"
 	"testing"
 	"time"
@@ -20,7 +19,6 @@ import (
 	"github.com/openshift/origin/pkg/security/legacyclient"
 	testutil "github.com/openshift/origin/test/util"
 	testserver "github.com/openshift/origin/test/util/server"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kapi "k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/util/logs"
 
@@ -32,15 +30,11 @@ import (
 	_ "k8s.io/kubernetes/pkg/apis/extensions/install"
 )
 
-// command options/description reference ???
-// https://github.com/openshift/origin/blob/release-3.6/pkg/cmd/cli/cli.go
 // CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags '-w' -o sccoc
-
 // sccoc --scc=anyuid new-app alpine:latest
 
 func main() {
-	var strFlag = flag.String("--scc", "restricted", "Description")
-	flag.StringVar(strFlag, "s", "restricted", "Description")
+	var strFlag = flag.String("scc", "restricted", "Description")
 	flag.Parse()
 	println(*strFlag)
 
@@ -49,10 +43,6 @@ func main() {
 	var sccopts []string
 	var sccn *securityapi.SecurityContextConstraints
 	_ = sccn
-
-	if len(os.Args) > 1 {
-		defaultScc = os.Args[len(os.Args)-1]
-	}
 
 	groups, users := bp.GetBoostrapSCCAccess(bp.DefaultOpenShiftInfraNamespace)
 	bootstrappedConstraints := bp.GetBootstrapSecurityContextConstraints(groups, users)
@@ -106,12 +96,10 @@ func main() {
 		checkErr(err)
 	}
 
-	_, err = cac.Images().List(metav1.ListOptions{})
-	checkErr(err)
-
-	fmt.Printf("\n")
+	// fmt.Printf("\n")
 	// fmt.Printf("%#v\n\n", proj)
 
+	// !!! reference https://github.com/openshift/origin/blob/release-3.6/cmd/oc/oc.go
 	logs.InitLogs()
 	defer logs.FlushLogs()
 	defer serviceability.BehaviorOnPanic(os.Getenv("OPENSHIFT_ON_PANIC"))()
@@ -122,8 +110,8 @@ func main() {
 		runtime.GOMAXPROCS(runtime.NumCPU())
 	}
 
-	basename := filepath.Base(os.Args[0])
-	command := cli.CommandFor(basename)
+	// !! force connection to test server client instead
+	command := cli.CommandFor("sccoc")
 	if err := command.Execute(); err != nil {
 		os.Exit(1)
 	}
