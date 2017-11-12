@@ -35,7 +35,7 @@ import (
 // sccoc --scc=anyuid new-app registry.centos.org/container-examples/starter-arbitrary-uid
 
 func main() {
-	var strFlag = flag.String("-scc", "restricted", "Description")
+	var strFlag = flag.String("-scc", "restricted", "Choose a valid Security Context Constraint")
 	flag.Parse()
 	println(*strFlag)
 
