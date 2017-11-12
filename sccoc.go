@@ -99,12 +99,14 @@ func main() {
 	project.Annotations = ns.Annotations
 
 	projcl := cac.Projects()
-	_, err = projcl.Create(project)
+	proj, err = projcl.Create(project)
 	checkErr(err)
 
 	// modify scc settings accordingly
-	err = openshift.AddSCCToServiceAccount(kclient, defaultScc, bp.DefaultServiceAccountName, project.Name)
-	checkErr(err)
+	if defaultScc != "restricted" {
+		err = openshift.AddSCCToServiceAccount(kclient, defaultScc, bp.DefaultServiceAccountName, proj.Name)
+		checkErr(err)
+	}
 
 	// use new-app cmd to deploy specified image
 	var cmd *cobra.Command
