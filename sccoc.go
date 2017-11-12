@@ -99,7 +99,7 @@ func main() {
 	project.Annotations = ns.Annotations
 
 	projcl := cac.Projects()
-	proj, err = projcl.Create(project)
+	proj, err := projcl.Create(project)
 	checkErr(err)
 
 	// modify scc settings accordingly
