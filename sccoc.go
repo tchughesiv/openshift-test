@@ -38,7 +38,7 @@ func main() {
 	flag.Parse()
 	println(*strFlag)
 
-	defaultScc := *strFlag
+	defaultScc := "restricted"
 	var t *testing.T
 	var sccopts []string
 	var sccn *securityapi.SecurityContextConstraints
@@ -48,15 +48,15 @@ func main() {
 	bootstrappedConstraints := bp.GetBootstrapSecurityContextConstraints(groups, users)
 	for _, v := range bootstrappedConstraints {
 		sccopts = append(sccopts, v.Name)
-		if v.Name == defaultScc {
+		if v.Name == *strFlag {
 			vtmp := v
 			sccn = &vtmp
 		}
 	}
 
-	if !contains(sccopts, defaultScc) {
+	if !contains(sccopts, *strFlag) {
 		fmt.Printf("\n")
-		fmt.Printf("%#v is not a valid scc. Must choose one of these:\n", defaultScc)
+		fmt.Printf("%#v is not a valid scc. Must choose one of these:\n", *strFlag)
 		for _, opt := range sccopts {
 			fmt.Printf(" - %s\n", opt)
 		}
@@ -78,9 +78,9 @@ func main() {
 	checkErr(err)
 
 	// modify scc settings accordingly
-	if defaultScc != "restricted" {
+	if *strFlag != defaultScc {
 		modifySCC := policy.SCCModificationOptions{
-			SCCName:      "restricted",
+			SCCName:      defaultScc,
 			SCCInterface: legacyclient.NewFromClient(kclient.Core().RESTClient()),
 			Subjects: []kapi.ObjectReference{
 				{
@@ -92,7 +92,7 @@ func main() {
 		}
 		err = modifySCC.RemoveSCC()
 		checkErr(err)
-		err = openshift.AddSCCToServiceAccount(kclient, defaultScc, bp.DefaultServiceAccountName, bp.DefaultOpenShiftInfraNamespace)
+		err = openshift.AddSCCToServiceAccount(kclient, *strFlag, bp.DefaultServiceAccountName, bp.DefaultOpenShiftInfraNamespace)
 		checkErr(err)
 	}
 
@@ -123,9 +123,9 @@ func checkErr(err error) {
 	}
 }
 
-func contains(sccopts []string, defaultScc string) bool {
+func contains(sccopts []string, *strFlag string) bool {
 	for _, a := range sccopts {
-		if a == defaultScc {
+		if a == *strFlag {
 			return true
 		}
 	}
