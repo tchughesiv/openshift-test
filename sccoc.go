@@ -77,8 +77,8 @@ func main() {
 	kconfig, err := testserver.StartConfiguredAllInOne(mconfig, nconfig, components)
 	kclient, err := testutil.GetClusterAdminKubeClient(kconfig)
 	checkErr(err)
-	//cac, err := testutil.GetClusterAdminClient(kconfig)
-	//checkErr(err)
+	cac, err := testutil.GetClusterAdminClient(kconfig)
+	checkErr(err)
 	adminconfig, err := testutil.GetClusterAdminClientConfig(kconfig)
 	checkErr(err)
 
@@ -101,8 +101,6 @@ func main() {
 		checkErr(err)
 	}
 
-	// fmt.Printf("\n")
-
 	// !!! reference https://github.com/openshift/origin/blob/release-3.6/cmd/oc/oc.go
 	logs.InitLogs()
 	defer logs.FlushLogs()
@@ -114,8 +112,12 @@ func main() {
 		runtime.GOMAXPROCS(runtime.NumCPU())
 	}
 
+	// fmt.Printf("\n")
+	fmt.Printf("Bearer Token %#v\n\n", adminconfig.BearerToken)
+	t := cac.OAuthAuthorizeTokens()
+	fmt.Printf("Bearer Token %#v\n\n", t)
+
 	// !! force connection to test server client instead
-	fmt.Printf("%#v\n\n", adminconfig)
 	command := cli.CommandFor("sccoc")
 	//	login.RunLogin(command)
 	if err := command.Execute(); err != nil {
