@@ -32,9 +32,10 @@ import (
 
 // CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags '-w' -o sccoc
 // sccoc --scc=anyuid new-app alpine:latest
+// sccoc --scc=anyuid new-app registry.centos.org/container-examples/starter-arbitrary-uid
 
 func main() {
-	var strFlag = flag.String("scc", "restricted", "Description")
+	var strFlag = flag.String("-scc", "restricted", "Description")
 	flag.Parse()
 	println(*strFlag)
 
