@@ -9,14 +9,17 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/openshift/origin/pkg/bootstrap/docker/openshift"
+	"github.com/openshift/origin/pkg/cmd/admin/policy"
 	"github.com/openshift/origin/pkg/cmd/cli"
 	bp "github.com/openshift/origin/pkg/cmd/server/bootstrappolicy"
 	projectapi "github.com/openshift/origin/pkg/project/apis/project"
 	allocator "github.com/openshift/origin/pkg/security"
 	admtesting "github.com/openshift/origin/pkg/security/admission/testing"
 	securityapi "github.com/openshift/origin/pkg/security/apis/security"
+	"github.com/openshift/origin/pkg/security/legacyclient"
 	testutil "github.com/openshift/origin/test/util"
 	testserver "github.com/openshift/origin/test/util/server"
+	kapi "k8s.io/kubernetes/pkg/api"
 )
 
 // command options/description reference ???
@@ -105,6 +108,19 @@ func main() {
 	// modify scc settings accordingly
 	if defaultScc != "restricted" {
 		err = openshift.AddSCCToServiceAccount(kclient, defaultScc, bp.DefaultServiceAccountName, proj.Name)
+		checkErr(err)
+		modifySCC := policy.SCCModificationOptions{
+			SCCName:      "restricted",
+			SCCInterface: legacyclient.NewFromClient(kclient.Core().RESTClient()),
+			Subjects: []kapi.ObjectReference{
+				{
+					Namespace: proj.Name,
+					Name:      bp.DefaultServiceAccountName,
+					Kind:      "ServiceAccount",
+				},
+			},
+		}
+		err = modifySCC.RemoveSCC()
 		checkErr(err)
 	}
 
