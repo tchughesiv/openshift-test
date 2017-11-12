@@ -39,6 +39,7 @@ func main() {
 	println(*strFlag)
 
 	defaultScc := "restricted"
+	sflag := *strFlag
 	var t *testing.T
 	var sccopts []string
 	var sccn *securityapi.SecurityContextConstraints
@@ -48,15 +49,15 @@ func main() {
 	bootstrappedConstraints := bp.GetBootstrapSecurityContextConstraints(groups, users)
 	for _, v := range bootstrappedConstraints {
 		sccopts = append(sccopts, v.Name)
-		if v.Name == *strFlag {
+		if v.Name == sflag {
 			vtmp := v
 			sccn = &vtmp
 		}
 	}
 
-	if !contains(sccopts, *strFlag) {
+	if !contains(sccopts, sflag) {
 		fmt.Printf("\n")
-		fmt.Printf("%#v is not a valid scc. Must choose one of these:\n", *strFlag)
+		fmt.Printf("%#v is not a valid scc. Must choose one of these:\n", sflag)
 		for _, opt := range sccopts {
 			fmt.Printf(" - %s\n", opt)
 		}
@@ -72,13 +73,13 @@ func main() {
 	checkErr(err)
 
 	kconfig, err := testserver.StartConfiguredAllInOne(mconfig, nconfig, components)
-	//cac, err := testutil.GetClusterAdminClient(kconfig)
-	//checkErr(err)
 	kclient, err := testutil.GetClusterAdminKubeClient(kconfig)
 	checkErr(err)
+	//cac, err := testutil.GetClusterAdminClient(kconfig)
+	//checkErr(err)
 
 	// modify scc settings accordingly
-	if *strFlag != defaultScc {
+	if sflag != defaultScc {
 		modifySCC := policy.SCCModificationOptions{
 			SCCName:      defaultScc,
 			SCCInterface: legacyclient.NewFromClient(kclient.Core().RESTClient()),
@@ -92,7 +93,7 @@ func main() {
 		}
 		err = modifySCC.RemoveSCC()
 		checkErr(err)
-		err = openshift.AddSCCToServiceAccount(kclient, *strFlag, bp.DefaultServiceAccountName, bp.DefaultOpenShiftInfraNamespace)
+		err = openshift.AddSCCToServiceAccount(kclient, sflag, bp.DefaultServiceAccountName, bp.DefaultOpenShiftInfraNamespace)
 		checkErr(err)
 	}
 
@@ -123,9 +124,9 @@ func checkErr(err error) {
 	}
 }
 
-func contains(sccopts []string, *strFlag string) bool {
+func contains(sccopts []string, sflag string) bool {
 	for _, a := range sccopts {
-		if a == *strFlag {
+		if a == sflag {
 			return true
 		}
 	}
