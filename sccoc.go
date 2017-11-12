@@ -41,6 +41,7 @@ func main() {
 
 	defaultScc := "restricted"
 	sflag := *strFlag
+	// remove flag here somehow??
 	var t *testing.T
 	var sccopts []string
 	var sccn *securityapi.SecurityContextConstraints
