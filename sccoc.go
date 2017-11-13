@@ -75,7 +75,7 @@ func main() {
 	nodeconfig, err := node.BuildKubernetesNodeConfig(*nconfig, false, false)
 	kserver := nodeconfig.KubeletServer
 	kubeCfg := kserver.KubeletConfiguration
-	kubeCfg.PodInfraContainerImage = "gcr.io/google_containers/pause-amd64:3.0"
+	kubeCfg.PodInfraContainerImage = "openshift/origin-pod:latest"
 	kconfig, err := testserver.StartConfiguredAllInOne(mconfig, nconfig, components)
 
 	// kclient, err := testutil.GetClusterAdminKubeClient(kconfig)
@@ -113,7 +113,7 @@ func main() {
 		if err := command.Execute(); err != nil {
 			os.Exit(1)
 		}
-		fmt.Printf("%#v\n\n", defaultsa)
+		fmt.Printf("Changed scc for %#v...\n\n", defaultsa)
 	}
 
 	fmt.Printf("%#v\n\n", kubeCfg.PodInfraContainerImage)
@@ -125,6 +125,7 @@ func main() {
 		os.Mkdir(rmount, 0750)
 	}
 	os.Args = []string{"oc", "adm", "registry", "--service-account=registry", "--config=" + kconfig, "--mount-host=" + rmount}
+	// os.Args = []string{"oc", "adm", "registry"}
 	if err := command.Execute(); err != nil {
 		os.Exit(1)
 	}
