@@ -91,7 +91,7 @@ func main() {
 		CommonStartConfig: docker.CommonStartConfig{
 			Out:                 out,
 			UsePorts:            openshift.DefaultPorts,
-			PortForwarding:      docker.defaultPortForwarding(),
+			PortForwarding:      defaultPortForwarding(),
 			DNSPort:             openshift.DefaultDNSPort,
 			checkAlternatePorts: true,
 		},
@@ -154,4 +154,9 @@ func contains(sccopts []string, sflag string) bool {
 		}
 	}
 	return false
+}
+
+func defaultPortForwarding() bool {
+	// Defaults to true if running on Mac, with no DOCKER_HOST defined
+	return runtime.GOOS == "darwin" && len(os.Getenv("DOCKER_HOST")) == 0
 }
