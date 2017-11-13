@@ -14,11 +14,9 @@ import (
 	bp "github.com/openshift/origin/pkg/cmd/server/bootstrappolicy"
 	"github.com/openshift/origin/pkg/cmd/server/kubernetes/node"
 	"github.com/openshift/origin/pkg/cmd/util/serviceability"
-	"github.com/openshift/origin/pkg/version"
 	testutil "github.com/openshift/origin/test/util"
 	testserver "github.com/openshift/origin/test/util/server"
 	"k8s.io/kubernetes/pkg/util/logs"
-	kubeversion "k8s.io/kubernetes/pkg/version"
 
 	// install all APIs # reference oc.go
 	_ "github.com/openshift/origin/pkg/api/install"
@@ -28,20 +26,12 @@ import (
 	_ "k8s.io/kubernetes/pkg/apis/extensions/install"
 )
 
-// CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags '-w' -o sccoc
 // OPENSHIFT_SCC=anyuid ./sccoc new-app registry.centos.org/container-examples/starter-arbitrary-uid
-const (
-	defaultSandboxImage = "gcr.io/google_containers/pause-amd64:3.0"
-)
 
 func main() {
 	var t *testing.T
 	var sflag string
 	var sccopts []string
-	// var sccn *securityapi.SecurityContextConstraints
-	// _ = sccn
-	// ./origin/pkg/cmd/util/variable/imagetemplate.go # set component and version !!!
-	// os.Setenv("OPENSHIFT_CONTAINERIZED", true)
 	sccvar := "OPENSHIFT_SCC"
 	defaultScc := bp.SecurityContextConstraintRestricted
 	_, sccenv := os.LookupEnv(sccvar)
@@ -76,21 +66,19 @@ func main() {
 
 	// How can supress the "startup" logs????
 	etcdt := testutil.RequireEtcd(t)
-	defer checkErr(os.RemoveAll(etcdt.DataDir))
+	defer func() { checkErr(os.RemoveAll(etcdt.DataDir)) }()
 	mconfig, nconfig, components, err := testserver.DefaultAllInOneOptions()
 	checkErr(err)
 
 	nodeconfig, err := node.BuildKubernetesNodeConfig(*nconfig, false, false)
 	kserver := nodeconfig.KubeletServer
-	kubeCfg := kserver.KubeletConfiguration
-	// kubeCfg.PodInfraContainerImage = "openshift/origin-pod:latest"
+	// defer func() { checkErr(dirCleanup(kserver.RootDirectory)) }()
 	kconfig, err := testserver.StartConfiguredAllInOne(mconfig, nconfig, components)
 
+	// kubeCfg := kserver.KubeletConfiguration
 	// kclient, err := testutil.GetClusterAdminKubeClient(kconfig)
 	// checkErr(err)
 	// oaclient, err := testutil.GetClusterAdminClient(kconfig)
-	// checkErr(err)
-	// oaconfig, err := testutil.GetClusterAdminClientConfig(kconfig)
 	// checkErr(err)
 
 	logs.InitLogs()
@@ -106,7 +94,7 @@ func main() {
 	fmt.Printf("\n")
 	os.Setenv("KUBECONFIG", kconfig)
 	clArgs := os.Args
-	command := cli.CommandFor("sccoc")
+	command := cli.CommandFor("oc")
 
 	fmt.Printf("\n")
 
@@ -124,11 +112,6 @@ func main() {
 		fmt.Printf("Changed scc for %#v...\n\n", defaultsa)
 	}
 
-	fmt.Printf("%#v\n\n", kubeCfg.PodInfraContainerImage)
-	fmt.Printf("Using %#v scc...\n\n", sflag)
-	fmt.Printf("sccoc %#v\n", version.Get())
-	fmt.Printf("kubernetes %#v\n", kubeversion.Get())
-
 	// openshift version
 	os.Args = []string{"oc", "version"}
 	if err := command.Execute(); err != nil {
@@ -136,23 +119,28 @@ func main() {
 	}
 
 	// deploy registry
+	fmt.Printf("\n")
 	rmount := kserver.RootDirectory + "/registry"
 	if _, err := os.Stat(rmount); os.IsNotExist(err) {
 		os.Mkdir(rmount, 0750)
 	}
-	os.Args = []string{"oc", "adm", "registry", "--service-account=registry", "--config=" + kconfig, "--mount-host=" + rmount}
-	// os.Args = []string{"oc", "adm", "registry"}
+	// os.Args = []string{"oc", "adm", "registry", "--service-account=registry", "--config=" + kconfig, "--mount-host=" + rmount}
+	os.Args = []string{"oc", "adm", "registry"}
 	if err := command.Execute(); err != nil {
 		os.Exit(1)
 	}
 
 	// ensure registry exists
+	fmt.Printf("\n")
 	os.Args = []string{"oc", "rollout", "status", "dc/docker-registry", "-w"}
 	if err := command.Execute(); err != nil {
 		os.Exit(1)
 	}
 
+	fmt.Printf("Using %#v scc...\n\n", sflag)
+
 	// execute cli command
+	fmt.Printf("\n")
 	os.Args = clArgs
 	if err := command.Execute(); err != nil {
 		os.Exit(1)
@@ -173,3 +161,26 @@ func contains(sccopts []string, sflag string) bool {
 	}
 	return false
 }
+
+/*
+func dirCleanup(rd string) error {
+	searchDir := rd
+	fileList := []string{}
+	err := filepath.Walk(searchDir, func(path string, f os.FileInfo, err error) error {
+		fileList = append(fileList, path)
+		return nil
+	})
+
+	for _, file := range fileList {
+		log.Println(file)
+		if err := syscall.Unmount(
+			file,
+			syscall.MNT_DETACH,
+		); err != nil {
+			return err
+		}
+
+	}
+	return err
+}
+*/
