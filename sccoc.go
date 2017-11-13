@@ -9,17 +9,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/openshift/origin/pkg/bootstrap/docker/openshift"
-	"github.com/openshift/origin/pkg/cmd/admin/policy"
 	"github.com/openshift/origin/pkg/cmd/cli"
 	bp "github.com/openshift/origin/pkg/cmd/server/bootstrappolicy"
 	"github.com/openshift/origin/pkg/cmd/server/kubernetes/node"
 	"github.com/openshift/origin/pkg/cmd/util/serviceability"
 	securityapi "github.com/openshift/origin/pkg/security/apis/security"
-	"github.com/openshift/origin/pkg/security/legacyclient"
 	testutil "github.com/openshift/origin/test/util"
 	testserver "github.com/openshift/origin/test/util/server"
-	kapi "k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/util/logs"
 
 	// install all APIs # reference oc.go
@@ -77,8 +73,8 @@ func main() {
 	nodeconfig, err := node.BuildKubernetesNodeConfig(*nconfig, false, false)
 	kserver := nodeconfig.KubeletServer
 	kubeCfg := kserver.KubeletConfiguration
+	kubeCfg.PodInfraContainerImage = "gcr.io/google_containers/pause-amd64:3.0"
 	kconfig, err := testserver.StartConfiguredAllInOne(mconfig, nconfig, components)
-	os.Setenv("KUBECONFIG", kconfig)
 	kclient, err := testutil.GetClusterAdminKubeClient(kconfig)
 	checkErr(err)
 
@@ -86,49 +82,6 @@ func main() {
 	// checkErr(err)
 	// oaconfig, err := testutil.GetClusterAdminClientConfig(kconfig)
 	// checkErr(err)
-
-	/*
-		// ./origin/pkg/cmd/admin/registry/registry.go
-		// in, out, errout := os.Stdin, os.Stdout, os.Stderr
-		// registry.NewCmdRegistry(f, fullName, "registry", out, errout),
-		opts := &registry.RegistryOptions{
-			Config: &registry.RegistryConfig{
-				ImageTemplate:  variable.NewDefaultImageTemplate(),
-				Name:           "registry",
-				Labels:         "docker-registry=default",
-				Ports:          strconv.Itoa(5000),
-				Volume:         "/registry",
-				ServiceAccount: "registry",
-				Replicas:       1,
-				EnforceQuota:   false,
-			},
-		}
-		// kcmdutil.CheckErr(opts.Complete(f, cmd, out, errout, args))
-		err = opts.RunCmdRegistry()
-		if err == cmdutil.ErrExit {
-			os.Exit(1)
-		}
-		// kcmdutil.CheckErr(err)
-	*/
-
-	// modify scc settings accordingly
-	if sflag != defaultScc {
-		modifySCC := policy.SCCModificationOptions{
-			SCCName:      defaultScc,
-			SCCInterface: legacyclient.NewFromClient(kclient.Core().RESTClient()),
-			Subjects: []kapi.ObjectReference{
-				{
-					Namespace: openshift.DefaultNamespace,
-					Name:      bp.DefaultServiceAccountName,
-					Kind:      "ServiceAccount",
-				},
-			},
-		}
-		err = modifySCC.RemoveSCC()
-		checkErr(err)
-		err = openshift.AddSCCToServiceAccount(kclient, sflag, bp.DefaultServiceAccountName, openshift.DefaultNamespace)
-		checkErr(err)
-	}
 
 	logs.InitLogs()
 	defer logs.FlushLogs()
@@ -141,8 +94,21 @@ func main() {
 	}
 
 	fmt.Printf("\n")
-	command := cli.CommandFor("sccoc")
+	os.Setenv("KUBECONFIG", kconfig)
 	clArgs := os.Args
+	command := cli.CommandFor("sccoc")
+
+	// modify scc settings accordingly
+	if sflag != defaultScc {
+		os.Args = []string{"oc", "adm", "policy", "remove-scc-from-user", defaultScc, "-z", bp.DefaultServiceAccountName}
+		if err := command.Execute(); err != nil {
+			os.Exit(1)
+		}
+		os.Args = []string{"oc", "adm", "policy", "add-scc-to-user", sflag, "-z", bp.DefaultServiceAccountName}
+		if err := command.Execute(); err != nil {
+			os.Exit(1)
+		}
+	}
 
 	// deploy registry
 	rmount := kserver.RootDirectory + "/registry"
