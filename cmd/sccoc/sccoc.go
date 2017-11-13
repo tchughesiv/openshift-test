@@ -130,12 +130,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Printf("\n")
-	os.Args = []string{"oc", "get", "all", "--all-namespaces"}
-	if err := command.Execute(); err != nil {
-		os.Exit(1)
-	}
-
 	// ensure registry exists
 	fmt.Printf("\n")
 	os.Args = []string{"oc", "rollout", "status", "dc/docker-registry", "-w"}
