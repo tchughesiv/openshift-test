@@ -33,18 +33,19 @@ import (
 // OPENSHIFT_SCC=anyuid ./sccoc new-app registry.centos.org/container-examples/starter-arbitrary-uid
 
 func main() {
-	defaultScc := "restricted"
-	sflag := defaultScc
-	sccenv := os.Getenv("OPENSHIFT_SCC")
-
-	if sccenv != "" && sccenv != defaultScc {
-		sflag = sccenv
-	}
-
+	var sflag string
 	var t *testing.T
 	var sccopts []string
 	var sccn *securityapi.SecurityContextConstraints
 	_ = sccn
+	defaultScc := "restricted"
+	_, sccenv := os.LookupEnv("OPENSHIFT_SCC")
+
+	if sccenv {
+		sflag = os.Getenv("OPENSHIFT_SCC")
+	} else {
+		sflag = defaultScc
+	}
 
 	groups, users := bp.GetBoostrapSCCAccess(bp.DefaultOpenShiftInfraNamespace)
 	bootstrappedConstraints := bp.GetBootstrapSecurityContextConstraints(groups, users)
@@ -72,6 +73,7 @@ func main() {
 	mconfig, nconfig, components, err := testserver.DefaultAllInOneOptions()
 	checkErr(err)
 	kconfig, err := testserver.StartConfiguredAllInOne(mconfig, nconfig, components)
+	os.Setenv("KUBECONFIG", kconfig)
 	kclient, err := testutil.GetClusterAdminKubeClient(kconfig)
 	checkErr(err)
 
@@ -107,7 +109,6 @@ func main() {
 
 	fmt.Printf("\n")
 	fmt.Printf("Using %#v scc...\n\n", sccn.Name)
-	os.Setenv("KUBECONFIG", kconfig)
 	command := cli.CommandFor("sccoc")
 	if err := command.Execute(); err != nil {
 		os.Exit(1)
