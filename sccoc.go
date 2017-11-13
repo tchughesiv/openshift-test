@@ -6,18 +6,14 @@ import (
 	"math/rand"
 	"os"
 	"runtime"
-	"strconv"
 	"testing"
 	"time"
 
 	"github.com/openshift/origin/pkg/bootstrap/docker/openshift"
 	"github.com/openshift/origin/pkg/cmd/admin/policy"
-	"github.com/openshift/origin/pkg/cmd/admin/registry"
 	"github.com/openshift/origin/pkg/cmd/cli"
 	bp "github.com/openshift/origin/pkg/cmd/server/bootstrappolicy"
-	cmdutil "github.com/openshift/origin/pkg/cmd/util"
 	"github.com/openshift/origin/pkg/cmd/util/serviceability"
-	"github.com/openshift/origin/pkg/cmd/util/variable"
 	securityapi "github.com/openshift/origin/pkg/security/apis/security"
 	"github.com/openshift/origin/pkg/security/legacyclient"
 	testutil "github.com/openshift/origin/test/util"
@@ -89,35 +85,30 @@ func main() {
 	// oaconfig, err := testutil.GetClusterAdminClientConfig(kconfig)
 	// checkErr(err)
 
-	clArgs := os.Args
-	os.Args = ["adm", "registry"]
-	if err := command.Execute(); err != nil {
-		os.Exit(1)
-	}
-	os.Args = clArgs
-/*
-	// ./origin/pkg/cmd/admin/registry/registry.go
-	// in, out, errout := os.Stdin, os.Stdout, os.Stderr
-	// registry.NewCmdRegistry(f, fullName, "registry", out, errout),
-	opts := &registry.RegistryOptions{
-		Config: &registry.RegistryConfig{
-			ImageTemplate:  variable.NewDefaultImageTemplate(),
-			Name:           "registry",
-			Labels:         "docker-registry=default",
-			Ports:          strconv.Itoa(5000),
-			Volume:         "/registry",
-			ServiceAccount: "registry",
-			Replicas:       1,
-			EnforceQuota:   false,
-		},
-	}
-	// kcmdutil.CheckErr(opts.Complete(f, cmd, out, errout, args))
-	err = opts.RunCmdRegistry()
-	if err == cmdutil.ErrExit {
-		os.Exit(1)
-	}
-	// kcmdutil.CheckErr(err)
-*/
+	/*
+		// ./origin/pkg/cmd/admin/registry/registry.go
+		// in, out, errout := os.Stdin, os.Stdout, os.Stderr
+		// registry.NewCmdRegistry(f, fullName, "registry", out, errout),
+		opts := &registry.RegistryOptions{
+			Config: &registry.RegistryConfig{
+				ImageTemplate:  variable.NewDefaultImageTemplate(),
+				Name:           "registry",
+				Labels:         "docker-registry=default",
+				Ports:          strconv.Itoa(5000),
+				Volume:         "/registry",
+				ServiceAccount: "registry",
+				Replicas:       1,
+				EnforceQuota:   false,
+			},
+		}
+		// kcmdutil.CheckErr(opts.Complete(f, cmd, out, errout, args))
+		err = opts.RunCmdRegistry()
+		if err == cmdutil.ErrExit {
+			os.Exit(1)
+		}
+		// kcmdutil.CheckErr(err)
+	*/
+
 	// modify scc settings accordingly
 	if sflag != defaultScc {
 		modifySCC := policy.SCCModificationOptions{
@@ -150,6 +141,15 @@ func main() {
 	fmt.Printf("\n")
 	fmt.Printf("Using %#v scc...\n\n", sccn.Name)
 	command := cli.CommandFor("sccoc")
+
+	// ensure registry exists
+	clArgs := os.Args
+	os.Args = []string{"oc", "adm", "registry"}
+	if err := command.Execute(); err != nil {
+		os.Exit(1)
+	}
+	os.Args = clArgs
+
 	if err := command.Execute(); err != nil {
 		os.Exit(1)
 	}
