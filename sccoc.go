@@ -124,7 +124,7 @@ func main() {
 	if _, err := os.Stat(rmount); os.IsNotExist(err) {
 		os.Mkdir(rmount, 0750)
 	}
-	os.Args = []string{"oc", "adm", "registry", "--mount-host=" + rmount}
+	os.Args = []string{"oc", "adm", "registry", "--service-account=registry", "--config=" + kconfig, "--mount-host=" + rmount}
 	if err := command.Execute(); err != nil {
 		os.Exit(1)
 	}
