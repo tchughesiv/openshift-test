@@ -75,9 +75,9 @@ func main() {
 	kubeCfg := kserver.KubeletConfiguration
 	kubeCfg.PodInfraContainerImage = "gcr.io/google_containers/pause-amd64:3.0"
 	kconfig, err := testserver.StartConfiguredAllInOne(mconfig, nconfig, components)
-	kclient, err := testutil.GetClusterAdminKubeClient(kconfig)
-	checkErr(err)
 
+	// kclient, err := testutil.GetClusterAdminKubeClient(kconfig)
+	// checkErr(err)
 	// oaclient, err := testutil.GetClusterAdminClient(kconfig)
 	// checkErr(err)
 	// oaconfig, err := testutil.GetClusterAdminClientConfig(kconfig)
