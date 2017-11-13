@@ -31,6 +31,7 @@ import (
 
 // CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags '-w' -o sccoc
 // OPENSHIFT_SCC=anyuid ./sccoc new-app registry.centos.org/container-examples/starter-arbitrary-uid
+// !!! WARNING: No Docker registry has been configured with the server. Automatic builds and deployments may not function.
 
 func main() {
 	var sflag string
