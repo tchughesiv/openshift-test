@@ -69,10 +69,8 @@ func main() {
 	// How can supress the "startup" logs????
 	etcdt := testutil.RequireEtcd(t)
 	defer checkErr(os.RemoveAll(etcdt.DataDir))
-
 	mconfig, nconfig, components, err := testserver.DefaultAllInOneOptions()
 	checkErr(err)
-
 	kconfig, err := testserver.StartConfiguredAllInOne(mconfig, nconfig, components)
 	kclient, err := testutil.GetClusterAdminKubeClient(kconfig)
 	checkErr(err)
@@ -107,9 +105,8 @@ func main() {
 		runtime.GOMAXPROCS(runtime.NumCPU())
 	}
 
-	// fmt.Printf("\n")
-	fmt.Printf("Using %#v scc...\n\n", sccenv)
-
+	fmt.Printf("\n")
+	fmt.Printf("Using %#v scc...\n\n", sccn.Name)
 	os.Setenv("KUBECONFIG", kconfig)
 	command := cli.CommandFor("sccoc")
 	if err := command.Execute(); err != nil {
