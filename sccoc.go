@@ -14,7 +14,6 @@ import (
 	bp "github.com/openshift/origin/pkg/cmd/server/bootstrappolicy"
 	"github.com/openshift/origin/pkg/cmd/server/kubernetes/node"
 	"github.com/openshift/origin/pkg/cmd/util/serviceability"
-	securityapi "github.com/openshift/origin/pkg/security/apis/security"
 	testutil "github.com/openshift/origin/test/util"
 	testserver "github.com/openshift/origin/test/util/server"
 	"k8s.io/kubernetes/pkg/util/logs"
@@ -34,11 +33,11 @@ func main() {
 	var t *testing.T
 	var sflag string
 	var sccopts []string
-	var sccn *securityapi.SecurityContextConstraints
+	// var sccn *securityapi.SecurityContextConstraints
+	// _ = sccn
 	sccvar := "OPENSHIFT_SCC"
 	defaultScc := bp.SecurityContextConstraintRestricted
 	_, sccenv := os.LookupEnv(sccvar)
-	_ = sccn
 
 	if sccenv {
 		sflag = os.Getenv(sccvar)
@@ -50,10 +49,12 @@ func main() {
 	bootstrappedConstraints := bp.GetBootstrapSecurityContextConstraints(groups, users)
 	for _, v := range bootstrappedConstraints {
 		sccopts = append(sccopts, v.Name)
-		if v.Name == sflag {
-			vtmp := v
-			sccn = &vtmp
-		}
+		/*
+			if v.Name == sflag {
+				vtmp := v
+				sccn = &vtmp
+			}
+		*/
 	}
 
 	if !contains(sccopts, sflag) {
@@ -101,15 +102,21 @@ func main() {
 
 	// modify scc settings accordingly
 	if sflag != defaultScc {
-		os.Args = []string{"oc", "adm", "policy", "remove-scc-from-user", defaultScc, "system:serviceaccount:" + openshift.DefaultNamespace + ":" + bp.DefaultServiceAccountName}
+		defaultsa := "system:serviceaccount:" + openshift.DefaultNamespace + ":" + bp.DefaultServiceAccountName
+		os.Args = []string{"oc", "adm", "policy", "remove-scc-from-user", defaultScc, defaultsa}
 		if err := command.Execute(); err != nil {
 			os.Exit(1)
 		}
-		os.Args = []string{"oc", "adm", "policy", "add-scc-to-user", sflag, "system:serviceaccount:" + openshift.DefaultNamespace + ":" + bp.DefaultServiceAccountName}
+		os.Args = []string{"oc", "adm", "policy", "add-scc-to-user", sflag, defaultsa}
 		if err := command.Execute(); err != nil {
 			os.Exit(1)
 		}
 	}
+
+	fmt.Printf("\n")
+	fmt.Printf("%#v\n\n", kubeCfg.PodInfraContainerImage)
+	fmt.Printf("Using %#v scc...\n\n", defaultsa)
+	fmt.Printf("Using %#v scc...\n\n", sflag)
 
 	// deploy registry
 	rmount := kserver.RootDirectory + "/registry"
@@ -126,10 +133,6 @@ func main() {
 	if err := command.Execute(); err != nil {
 		os.Exit(1)
 	}
-
-	fmt.Printf("\n")
-	fmt.Printf("%#v\n\n", kubeCfg.PodInfraContainerImage)
-	fmt.Printf("Using %#v scc...\n\n", sccn.Name)
 
 	// execute cli command
 	os.Args = clArgs
