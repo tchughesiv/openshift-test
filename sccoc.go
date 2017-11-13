@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/openshift/origin/pkg/bootstrap/docker/openshift"
 	"github.com/openshift/origin/pkg/cmd/cli"
 	bp "github.com/openshift/origin/pkg/cmd/server/bootstrappolicy"
 	"github.com/openshift/origin/pkg/cmd/server/kubernetes/node"
@@ -100,11 +101,11 @@ func main() {
 
 	// modify scc settings accordingly
 	if sflag != defaultScc {
-		os.Args = []string{"oc", "adm", "policy", "remove-scc-from-user", defaultScc, "-z", bp.DefaultServiceAccountName}
+		os.Args = []string{"oc", "adm", "policy", "remove-scc-from-user", defaultScc, "system:serviceaccount:" + openshift.DefaultNamespace + ":" + bp.DefaultServiceAccountName}
 		if err := command.Execute(); err != nil {
 			os.Exit(1)
 		}
-		os.Args = []string{"oc", "adm", "policy", "add-scc-to-user", sflag, "-z", bp.DefaultServiceAccountName}
+		os.Args = []string{"oc", "adm", "policy", "add-scc-to-user", sflag, "system:serviceaccount:" + openshift.DefaultNamespace + ":" + bp.DefaultServiceAccountName}
 		if err := command.Execute(); err != nil {
 			os.Exit(1)
 		}
