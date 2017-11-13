@@ -76,10 +76,6 @@ func main() {
 	kconfig, err := testserver.StartConfiguredAllInOne(mconfig, nconfig, components)
 	kclient, err := testutil.GetClusterAdminKubeClient(kconfig)
 	checkErr(err)
-	//cac, err := testutil.GetClusterAdminClient(kconfig)
-	//checkErr(err)
-	//adminconfig, err := testutil.GetClusterAdminClientConfig(kconfig)
-	//checkErr(err)
 
 	// modify scc settings accordingly
 	if sflag != defaultScc {
@@ -88,7 +84,7 @@ func main() {
 			SCCInterface: legacyclient.NewFromClient(kclient.Core().RESTClient()),
 			Subjects: []kapi.ObjectReference{
 				{
-					Namespace: bp.DefaultOpenShiftInfraNamespace,
+					Namespace: "default",
 					Name:      bp.DefaultServiceAccountName,
 					Kind:      "ServiceAccount",
 				},
@@ -96,7 +92,7 @@ func main() {
 		}
 		err = modifySCC.RemoveSCC()
 		checkErr(err)
-		err = openshift.AddSCCToServiceAccount(kclient, sflag, bp.DefaultServiceAccountName, bp.DefaultOpenShiftInfraNamespace)
+		err = openshift.AddSCCToServiceAccount(kclient, sflag, bp.DefaultServiceAccountName, "default")
 		checkErr(err)
 	}
 
@@ -113,9 +109,9 @@ func main() {
 
 	// fmt.Printf("\n")
 	// fmt.Printf("%#v\n\n", kconfig)
+
 	os.Setenv("KUBECONFIG", kconfig)
 	command := cli.CommandFor("sccoc")
-	//	login.RunLogin(command)
 	if err := command.Execute(); err != nil {
 		os.Exit(1)
 	}
