@@ -10,14 +10,14 @@
 
 build
 ```shell
-$ git clone https://github.com/tchughesiv/sccoc $GOPATH/src/github.com/openshift/origin
+$ git clone https://github.com/tchughesiv/sccoc $GOROOT/src/github.com/openshift/origin
 # alternatively could... 
 # $ go get -d github.com/tchughesiv/sccoc
 # $ mkdir -p $GOPATH/src/github.com/openshift
 # $ ln -s $GOPATH/src/github.com/tchughesiv/sccoc $GOPATH/src/github.com/openshift/origin
-$ cd $GOPATH/src/github.com/openshift/origin/
+$ cd $GOROOT/src/github.com/openshift/origin/
 $ git submodule update --init
-$ go build -o sccoc
+$ make -C origin build WHAT=cmd/sccoc
 ```
 
 dev
