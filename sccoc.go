@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"os"
 	"runtime"
+	"strconv"
 	"testing"
 	"time"
 
@@ -14,6 +15,7 @@ import (
 	"github.com/openshift/origin/pkg/cmd/cli"
 	bp "github.com/openshift/origin/pkg/cmd/server/bootstrappolicy"
 	"github.com/openshift/origin/pkg/cmd/util/serviceability"
+	"github.com/openshift/origin/pkg/cmd/util/variable"
 	securityapi "github.com/openshift/origin/pkg/security/apis/security"
 	"github.com/openshift/origin/pkg/security/legacyclient"
 	testutil "github.com/openshift/origin/test/util"
@@ -72,7 +74,7 @@ func main() {
 	}
 
 	// How can supress the "startup" logs????
-	etcdt := testutil.RequireEtcd(t)
+	etcdt, _ := testutil.RequireEtcd3(t)
 	defer checkErr(os.RemoveAll(etcdt.DataDir))
 	mconfig, nconfig, components, err := testserver.DefaultAllInOneOptions()
 	checkErr(err)
@@ -85,25 +87,28 @@ func main() {
 	// oaconfig, err := testutil.GetClusterAdminClientConfig(kconfig)
 	// checkErr(err)
 
-	/*
-		// Ensure registry deployed
-		// reference ./origin/pkg/bootstrap/docker/up.go
-		out := os.Stdout
-		c := &docker.ClientStartConfig{
-			CommonStartConfig: docker.CommonStartConfig{
-				Out:            out,
-				UsePorts:       openshift.DefaultPorts,
-				PortForwarding: defaultPortForwarding(),
-				DNSPort:        openshift.DefaultDNSPort,
-				// checkAlternatePorts: true,
-			},
-		}
-		f, err := c.Factory()
-		checkErr(err)
-		imageFormat := fmt.Sprintf("%s-${component}:%s", c.Image, c.ImageVersion)
-		err = c.OpenShiftHelper().InstallRegistry(kclient, f, c.LocalConfigDir, imageFormat, c.HostPersistentVolumesDir, out, os.Stderr)
-		checkErr(err)
-	*/
+	// ./origin/pkg/cmd/admin/registry/registry.go
+	// in, out, errout := os.Stdin, os.Stdout, os.Stderr
+	// registry.NewCmdRegistry(f, fullName, "registry", out, errout),
+	opts := &registry.RegistryOptions{
+		Config: &registry.RegistryConfig{
+			ImageTemplate:  variable.NewDefaultImageTemplate(),
+			Name:           "registry",
+			Labels:         registry.defaultLabel,
+			Ports:          strconv.Itoa(registry.defaultPort),
+			Volume:         "/registry",
+			ServiceAccount: "registry",
+			Replicas:       1,
+			EnforceQuota:   false,
+		},
+	}
+	//	kcmdutil.CheckErr(opts.Complete(f, cmd, out, errout, args))
+	err = opts.RunCmdRegistry()
+	if err == cmdutil.ErrExit {
+		os.Exit(1)
+	}
+	//	kcmdutil.CheckErr(err)
+
 	// modify scc settings accordingly
 	if sflag != defaultScc {
 		modifySCC := policy.SCCModificationOptions{
