@@ -9,7 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/openshift/origin/pkg/bootstrap/docker"
 	"github.com/openshift/origin/pkg/bootstrap/docker/openshift"
 	"github.com/openshift/origin/pkg/cmd/admin/policy"
 	"github.com/openshift/origin/pkg/cmd/cli"
@@ -82,28 +81,28 @@ func main() {
 	checkErr(err)
 	// oaclient, err := testutil.GetClusterAdminClient(kconfig)
 	// checkErr(err)
-	//	oaconfig, err := testutil.GetClusterAdminClientConfig(kconfig)
-	//	checkErr(err)
-
-	// reference ./origin/pkg/bootstrap/docker/up.go
-	out := os.Stdout
-	c := &docker.ClientStartConfig{
-		CommonStartConfig: docker.CommonStartConfig{
-			Out:                 out,
-			UsePorts:            openshift.DefaultPorts,
-			PortForwarding:      defaultPortForwarding(),
-			DNSPort:             openshift.DefaultDNSPort,
-			checkAlternatePorts: true,
-		},
-	}
-	f, err := c.Factory()
-	checkErr(err)
-	imageFormat := fmt.Sprintf("%s-${component}:%s", c.Image, c.ImageVersion)
-	err = c.OpenShiftHelper().InstallRegistry(kclient, f, c.LocalConfigDir, imageFormat, c.HostPersistentVolumesDir, out, os.Stderr)
-	checkErr(err)
-	// f, err := openshift.
+	// oaconfig, err := testutil.GetClusterAdminClientConfig(kconfig)
 	// checkErr(err)
 
+	/*
+		// Ensure registry deployed
+		// reference ./origin/pkg/bootstrap/docker/up.go
+		out := os.Stdout
+		c := &docker.ClientStartConfig{
+			CommonStartConfig: docker.CommonStartConfig{
+				Out:            out,
+				UsePorts:       openshift.DefaultPorts,
+				PortForwarding: defaultPortForwarding(),
+				DNSPort:        openshift.DefaultDNSPort,
+				// checkAlternatePorts: true,
+			},
+		}
+		f, err := c.Factory()
+		checkErr(err)
+		imageFormat := fmt.Sprintf("%s-${component}:%s", c.Image, c.ImageVersion)
+		err = c.OpenShiftHelper().InstallRegistry(kclient, f, c.LocalConfigDir, imageFormat, c.HostPersistentVolumesDir, out, os.Stderr)
+		checkErr(err)
+	*/
 	// modify scc settings accordingly
 	if sflag != defaultScc {
 		modifySCC := policy.SCCModificationOptions{
