@@ -36,16 +36,17 @@ import (
 // ??? ./origin/pkg/serviceaccounts/controllers/docker_registry_service.go
 
 func main() {
-	var sflag string
 	var t *testing.T
+	var sflag string
 	var sccopts []string
 	var sccn *securityapi.SecurityContextConstraints
+	sccvar := "OPENSHIFT_SCC"
+	defaultScc := bp.SecurityContextConstraintRestricted
+	_, sccenv := os.LookupEnv(sccvar)
 	_ = sccn
-	defaultScc := "restricted"
-	_, sccenv := os.LookupEnv("OPENSHIFT_SCC")
 
 	if sccenv {
-		sflag = os.Getenv("OPENSHIFT_SCC")
+		sflag = os.Getenv(sccvar)
 	} else {
 		sflag = defaultScc
 	}
