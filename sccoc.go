@@ -13,6 +13,7 @@ import (
 	"github.com/openshift/origin/pkg/cmd/admin/policy"
 	"github.com/openshift/origin/pkg/cmd/cli"
 	bp "github.com/openshift/origin/pkg/cmd/server/bootstrappolicy"
+	"github.com/openshift/origin/pkg/cmd/server/kubernetes/node"
 	"github.com/openshift/origin/pkg/cmd/util/serviceability"
 	securityapi "github.com/openshift/origin/pkg/security/apis/security"
 	"github.com/openshift/origin/pkg/security/legacyclient"
@@ -73,6 +74,9 @@ func main() {
 	defer checkErr(os.RemoveAll(etcdt.DataDir))
 	mconfig, nconfig, components, err := testserver.DefaultAllInOneOptions()
 	checkErr(err)
+	nodeconfig, err := node.BuildKubernetesNodeConfig(*nconfig, false, false)
+	kserver := nodeconfig.KubeletServer
+	kubeCfg := kserver.KubeletConfiguration
 	kconfig, err := testserver.StartConfiguredAllInOne(mconfig, nconfig, components)
 	os.Setenv("KUBECONFIG", kconfig)
 	kclient, err := testutil.GetClusterAdminKubeClient(kconfig)
@@ -137,21 +141,28 @@ func main() {
 	}
 
 	fmt.Printf("\n")
-	fmt.Printf("Using %#v scc...\n\n", sccn.Name)
 	command := cli.CommandFor("sccoc")
+	clArgs := os.Args
 
 	// deploy registry
-	clArgs := os.Args
-	os.Args = []string{"oc", "adm", "registry"}
+	rmount := kserver.RootDirectory + "/registry"
+	if _, err := os.Stat(rmount); os.IsNotExist(err) {
+		os.Mkdir(rmount, 0750)
+	}
+	os.Args = []string{"oc", "adm", "registry", "--mount-host=" + rmount}
 	if err := command.Execute(); err != nil {
 		os.Exit(1)
 	}
 
 	// ensure registry exists
-	os.Args = []string{"oc", "rollout", "status", "docker-registry"}
+	os.Args = []string{"oc", "rollout", "status", "dc/docker-registry", "-w"}
 	if err := command.Execute(); err != nil {
 		os.Exit(1)
 	}
+
+	fmt.Printf("\n")
+	fmt.Printf("%#v\n\n", kubeCfg.PodInfraContainerImage)
+	fmt.Printf("Using %#v scc...\n\n", sccn.Name)
 
 	// execute cli command
 	os.Args = clArgs
