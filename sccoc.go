@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/openshift/origin/pkg/bootstrap/docker"
 	"github.com/openshift/origin/pkg/bootstrap/docker/openshift"
 	"github.com/openshift/origin/pkg/cmd/admin/policy"
 	"github.com/openshift/origin/pkg/cmd/cli"
@@ -21,7 +22,7 @@ import (
 	kapi "k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/util/logs"
 
-	// install all APIs
+	// install all APIs # reference oc.go
 	_ "github.com/openshift/origin/pkg/api/install"
 	_ "k8s.io/kubernetes/pkg/api/install"
 	_ "k8s.io/kubernetes/pkg/apis/autoscaling/install"
@@ -32,6 +33,8 @@ import (
 // CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags '-w' -o sccoc
 // OPENSHIFT_SCC=anyuid ./sccoc new-app registry.centos.org/container-examples/starter-arbitrary-uid
 // !!! WARNING: No Docker registry has been configured with the server. Automatic builds and deployments may not function.
+// MUST create registry in default space...
+// ??? ./origin/pkg/serviceaccounts/controllers/docker_registry_service.go
 
 func main() {
 	var sflag string
@@ -77,8 +80,29 @@ func main() {
 	os.Setenv("KUBECONFIG", kconfig)
 	kclient, err := testutil.GetClusterAdminKubeClient(kconfig)
 	checkErr(err)
-	//oaclient, err := testutil.GetClusterAdminClient(kconfig)
-	//checkErr(err)
+	// oaclient, err := testutil.GetClusterAdminClient(kconfig)
+	// checkErr(err)
+	//	oaconfig, err := testutil.GetClusterAdminClientConfig(kconfig)
+	//	checkErr(err)
+
+	// reference ./origin/pkg/bootstrap/docker/up.go
+	out := os.Stdout
+	c := &docker.ClientStartConfig{
+		CommonStartConfig: docker.CommonStartConfig{
+			Out:                 out,
+			UsePorts:            openshift.DefaultPorts,
+			PortForwarding:      docker.defaultPortForwarding(),
+			DNSPort:             openshift.DefaultDNSPort,
+			checkAlternatePorts: true,
+		},
+	}
+	f, err := c.Factory()
+	checkErr(err)
+	imageFormat := fmt.Sprintf("%s-${component}:%s", c.Image, c.ImageVersion)
+	err = c.OpenShiftHelper().InstallRegistry(kclient, f, c.LocalConfigDir, imageFormat, c.HostPersistentVolumesDir, out, os.Stderr)
+	checkErr(err)
+	// f, err := openshift.
+	// checkErr(err)
 
 	// modify scc settings accordingly
 	if sflag != defaultScc {
@@ -87,7 +111,7 @@ func main() {
 			SCCInterface: legacyclient.NewFromClient(kclient.Core().RESTClient()),
 			Subjects: []kapi.ObjectReference{
 				{
-					Namespace: "default",
+					Namespace: openshift.DefaultNamespace,
 					Name:      bp.DefaultServiceAccountName,
 					Kind:      "ServiceAccount",
 				},
@@ -95,11 +119,10 @@ func main() {
 		}
 		err = modifySCC.RemoveSCC()
 		checkErr(err)
-		err = openshift.AddSCCToServiceAccount(kclient, sflag, bp.DefaultServiceAccountName, "default")
+		err = openshift.AddSCCToServiceAccount(kclient, sflag, bp.DefaultServiceAccountName, openshift.DefaultNamespace)
 		checkErr(err)
 	}
 
-	// !!! reference https://github.com/openshift/origin/blob/release-3.6/cmd/oc/oc.go
 	logs.InitLogs()
 	defer logs.FlushLogs()
 	defer serviceability.BehaviorOnPanic(os.Getenv("OPENSHIFT_ON_PANIC"))()
