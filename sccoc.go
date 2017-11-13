@@ -77,6 +77,8 @@ func main() {
 	os.Setenv("KUBECONFIG", kconfig)
 	kclient, err := testutil.GetClusterAdminKubeClient(kconfig)
 	checkErr(err)
+	//oaclient, err := testutil.GetClusterAdminClient(kconfig)
+	//checkErr(err)
 
 	// modify scc settings accordingly
 	if sflag != defaultScc {
