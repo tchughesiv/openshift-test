@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"log"
 	"math/rand"
@@ -31,16 +30,16 @@ import (
 )
 
 // CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags '-w' -o sccoc
-// sccoc -scc=anyuid new-app alpine:latest
-// sccoc -scc=anyuid new-app registry.centos.org/container-examples/starter-arbitrary-uid
+// OPENSHIFT_SCC=anyuid ./sccoc new-app registry.centos.org/container-examples/starter-arbitrary-uid
 
 func main() {
-	var strFlag = flag.String("scc", "restricted", "Choose a valid Security Context Constraint")
-	flag.Parse()
-
 	defaultScc := "restricted"
-	sflag := *strFlag
-	// remove flag here somehow??
+	sflag := defaultScc
+	sccenv := os.Getenv("OPENSHIFT_SCC")
+
+	if sccenv != "" && sccenv != defaultScc {
+		sflag = sccenv
+	}
 
 	var t *testing.T
 	var sccopts []string
@@ -77,10 +76,10 @@ func main() {
 	kconfig, err := testserver.StartConfiguredAllInOne(mconfig, nconfig, components)
 	kclient, err := testutil.GetClusterAdminKubeClient(kconfig)
 	checkErr(err)
-	cac, err := testutil.GetClusterAdminClient(kconfig)
-	checkErr(err)
-	adminconfig, err := testutil.GetClusterAdminClientConfig(kconfig)
-	checkErr(err)
+	//cac, err := testutil.GetClusterAdminClient(kconfig)
+	//checkErr(err)
+	//adminconfig, err := testutil.GetClusterAdminClientConfig(kconfig)
+	//checkErr(err)
 
 	// modify scc settings accordingly
 	if sflag != defaultScc {
@@ -113,14 +112,8 @@ func main() {
 	}
 
 	// fmt.Printf("\n")
-	fmt.Printf("Bearer Token %#v\n\n", adminconfig.BearerToken)
-	/*
-		t := cac.OAuthAuthorizeTokens()
-		fmt.Printf("Bearer Token %#v\n\n", t)
-		t2 := cac.OAuthAccessTokens()
-		fmt.Printf("Bearer Token %#v\n\n", t2)
-	*/
-	// !! force connection to test server client instead
+	// fmt.Printf("%#v\n\n", kconfig)
+	os.Setenv("KUBECONFIG", kconfig)
 	command := cli.CommandFor("sccoc")
 	//	login.RunLogin(command)
 	if err := command.Execute(); err != nil {
