@@ -14,9 +14,11 @@ import (
 	bp "github.com/openshift/origin/pkg/cmd/server/bootstrappolicy"
 	"github.com/openshift/origin/pkg/cmd/server/kubernetes/node"
 	"github.com/openshift/origin/pkg/cmd/util/serviceability"
+	"github.com/openshift/origin/pkg/version"
 	testutil "github.com/openshift/origin/test/util"
 	testserver "github.com/openshift/origin/test/util/server"
 	"k8s.io/kubernetes/pkg/util/logs"
+	kubeversion "k8s.io/kubernetes/pkg/version"
 
 	// install all APIs # reference oc.go
 	_ "github.com/openshift/origin/pkg/api/install"
@@ -28,6 +30,9 @@ import (
 
 // CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags '-w' -o sccoc
 // OPENSHIFT_SCC=anyuid ./sccoc new-app registry.centos.org/container-examples/starter-arbitrary-uid
+const (
+	defaultSandboxImage = "gcr.io/google_containers/pause-amd64:3.0"
+)
 
 func main() {
 	var t *testing.T
@@ -35,6 +40,8 @@ func main() {
 	var sccopts []string
 	// var sccn *securityapi.SecurityContextConstraints
 	// _ = sccn
+	// ./origin/pkg/cmd/util/variable/imagetemplate.go # set component and version !!!
+	// os.Setenv("OPENSHIFT_CONTAINERIZED", true)
 	sccvar := "OPENSHIFT_SCC"
 	defaultScc := bp.SecurityContextConstraintRestricted
 	_, sccenv := os.LookupEnv(sccvar)
@@ -72,10 +79,11 @@ func main() {
 	defer checkErr(os.RemoveAll(etcdt.DataDir))
 	mconfig, nconfig, components, err := testserver.DefaultAllInOneOptions()
 	checkErr(err)
+
 	nodeconfig, err := node.BuildKubernetesNodeConfig(*nconfig, false, false)
 	kserver := nodeconfig.KubeletServer
 	kubeCfg := kserver.KubeletConfiguration
-	kubeCfg.PodInfraContainerImage = "openshift/origin-pod:latest"
+	// kubeCfg.PodInfraContainerImage = "openshift/origin-pod:latest"
 	kconfig, err := testserver.StartConfiguredAllInOne(mconfig, nconfig, components)
 
 	// kclient, err := testutil.GetClusterAdminKubeClient(kconfig)
@@ -118,6 +126,14 @@ func main() {
 
 	fmt.Printf("%#v\n\n", kubeCfg.PodInfraContainerImage)
 	fmt.Printf("Using %#v scc...\n\n", sflag)
+	fmt.Printf("sccoc %#v\n", version.Get())
+	fmt.Printf("kubernetes %#v\n", kubeversion.Get())
+
+	// openshift version
+	os.Args = []string{"oc", "version"}
+	if err := command.Execute(); err != nil {
+		os.Exit(1)
+	}
 
 	// deploy registry
 	rmount := kserver.RootDirectory + "/registry"
@@ -156,9 +172,4 @@ func contains(sccopts []string, sflag string) bool {
 		}
 	}
 	return false
-}
-
-func defaultPortForwarding() bool {
-	// Defaults to true if running on Mac, with no DOCKER_HOST defined
-	return runtime.GOOS == "darwin" && len(os.Getenv("DOCKER_HOST")) == 0
 }
