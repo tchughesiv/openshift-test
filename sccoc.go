@@ -12,6 +12,7 @@ import (
 
 	"github.com/openshift/origin/pkg/bootstrap/docker/openshift"
 	"github.com/openshift/origin/pkg/cmd/admin/policy"
+	"github.com/openshift/origin/pkg/cmd/admin/registry"
 	"github.com/openshift/origin/pkg/cmd/cli"
 	bp "github.com/openshift/origin/pkg/cmd/server/bootstrappolicy"
 	"github.com/openshift/origin/pkg/cmd/util/serviceability"
