@@ -31,9 +31,6 @@ import (
 
 // CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags '-w' -o sccoc
 // OPENSHIFT_SCC=anyuid ./sccoc new-app registry.centos.org/container-examples/starter-arbitrary-uid
-// !!! WARNING: No Docker registry has been configured with the server. Automatic builds and deployments may not function.
-// MUST create registry in default space...
-// ??? ./origin/pkg/serviceaccounts/controllers/docker_registry_service.go
 
 func main() {
 	var t *testing.T
@@ -80,6 +77,7 @@ func main() {
 	os.Setenv("KUBECONFIG", kconfig)
 	kclient, err := testutil.GetClusterAdminKubeClient(kconfig)
 	checkErr(err)
+
 	// oaclient, err := testutil.GetClusterAdminClient(kconfig)
 	// checkErr(err)
 	// oaconfig, err := testutil.GetClusterAdminClientConfig(kconfig)
@@ -142,13 +140,20 @@ func main() {
 	fmt.Printf("Using %#v scc...\n\n", sccn.Name)
 	command := cli.CommandFor("sccoc")
 
-	// first ensure registry exists
+	// deploy registry
 	clArgs := os.Args
 	os.Args = []string{"oc", "adm", "registry"}
 	if err := command.Execute(); err != nil {
 		os.Exit(1)
 	}
 
+	// ensure registry exists
+	os.Args = []string{"oc", "rollout", "status", "docker-registry"}
+	if err := command.Execute(); err != nil {
+		os.Exit(1)
+	}
+
+	// execute cli command
 	os.Args = clArgs
 	if err := command.Execute(); err != nil {
 		os.Exit(1)
