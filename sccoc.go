@@ -72,7 +72,7 @@ func main() {
 	}
 
 	// How can supress the "startup" logs????
-	etcdt, _ := testutil.RequireEtcd3(t)
+	etcdt := testutil.RequireEtcd(t)
 	defer checkErr(os.RemoveAll(etcdt.DataDir))
 	mconfig, nconfig, components, err := testserver.DefaultAllInOneOptions()
 	checkErr(err)
@@ -142,14 +142,14 @@ func main() {
 	fmt.Printf("Using %#v scc...\n\n", sccn.Name)
 	command := cli.CommandFor("sccoc")
 
-	// ensure registry exists
+	// first ensure registry exists
 	clArgs := os.Args
 	os.Args = []string{"oc", "adm", "registry"}
 	if err := command.Execute(); err != nil {
 		os.Exit(1)
 	}
-	os.Args = clArgs
 
+	os.Args = clArgs
 	if err := command.Execute(); err != nil {
 		os.Exit(1)
 	}
