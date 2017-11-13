@@ -108,7 +108,7 @@ func main() {
 	}
 
 	// fmt.Printf("\n")
-	// fmt.Printf("%#v\n\n", kconfig)
+	fmt.Printf("Using %#v scc...\n\n", sccenv)
 
 	os.Setenv("KUBECONFIG", kconfig)
 	command := cli.CommandFor("sccoc")
