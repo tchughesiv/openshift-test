@@ -100,6 +100,8 @@ func main() {
 	clArgs := os.Args
 	command := cli.CommandFor("sccoc")
 
+	fmt.Printf("\n")
+
 	// modify scc settings accordingly
 	if sflag != defaultScc {
 		defaultsa := "system:serviceaccount:" + openshift.DefaultNamespace + ":" + bp.DefaultServiceAccountName
@@ -111,11 +113,10 @@ func main() {
 		if err := command.Execute(); err != nil {
 			os.Exit(1)
 		}
+		fmt.Printf("%#v\n\n", defaultsa)
 	}
 
-	fmt.Printf("\n")
 	fmt.Printf("%#v\n\n", kubeCfg.PodInfraContainerImage)
-	fmt.Printf("Using %#v scc...\n\n", defaultsa)
 	fmt.Printf("Using %#v scc...\n\n", sflag)
 
 	// deploy registry
