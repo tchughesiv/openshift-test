@@ -66,13 +66,13 @@ func main() {
 
 	// How can supress the "startup" logs????
 	etcdt := testutil.RequireEtcd(t)
-	defer func() { checkErr(os.RemoveAll(etcdt.DataDir)) }()
+	defer os.RemoveAll(etcdt.DataDir)
 	mconfig, nconfig, components, err := testserver.DefaultAllInOneOptions()
 	checkErr(err)
 
 	nodeconfig, err := node.BuildKubernetesNodeConfig(*nconfig, false, false)
 	kserver := nodeconfig.KubeletServer
-	// defer func() { checkErr(dirCleanup(kserver.RootDirectory)) }()
+	// defer checkErr(dirCleanup(kserver.RootDirectory))
 	kconfig, err := testserver.StartConfiguredAllInOne(mconfig, nconfig, components)
 
 	// kubeCfg := kserver.KubeletConfiguration
