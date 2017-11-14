@@ -11,8 +11,9 @@ import (
 
 	"github.com/openshift/origin/pkg/bootstrap/docker/openshift"
 	"github.com/openshift/origin/pkg/cmd/cli"
+	configapi "github.com/openshift/origin/pkg/cmd/server/api"
 	bp "github.com/openshift/origin/pkg/cmd/server/bootstrappolicy"
-	"github.com/openshift/origin/pkg/cmd/server/kubernetes/node"
+	"github.com/openshift/origin/pkg/cmd/server/etcd/etcdserver"
 	"github.com/openshift/origin/pkg/cmd/util/serviceability"
 	testutil "github.com/openshift/origin/test/util"
 	testserver "github.com/openshift/origin/test/util/server"
@@ -30,11 +31,11 @@ import (
 // maybe limit to just new-app & run???
 
 func main() {
-	var t *testing.T
 	var sflag string
 	var sccopts []string
 	sccvar := "OPENSHIFT_SCC"
 	etcdData := "/tmp/etcdtest"
+	os.Setenv("TEST_ETCD_DIR", etcdData)
 	defaultScc := bp.SecurityContextConstraintRestricted
 	_, sccenv := os.LookupEnv(sccvar)
 
@@ -62,19 +63,41 @@ func main() {
 
 	// How can supress the "startup" logs????
 	// switch to a more permanant etcd??? in tmp... then don't cleanup
-	os.Setenv("TEST_ETCD_DIR", etcdData)
-	if _, err := os.Stat(etcdData); os.IsNotExist(err) {
-		err = os.Mkdir(etcdData, 0700)
-		checkErr(err)
-	}
-	_ = testutil.RequireEtcd(t)
-	defer os.RemoveAll(etcdData)
-	_, nconfig, kconfig, err := testserver.StartTestAllInOne()
+	//if _, err := os.Stat(etcdData); os.IsNotExist(err) {
+	//	err = os.Mkdir(etcdData, 0700)
+	//	checkErr(err)
+	//}
+	//	_, out, errout := os.Stdin, os.Stdout, os.Stderr
+
+	// _ = services.NewEtcd(etcdData)
+	// checkErr(etcd.Start())
+
+	// etcdt.Terminate(t)
+	// os.RemoveAll(etcdt.DataDir)
+	// s := etcdtest.NewUnsecuredEtcdTestClientServer(t)
+	// url = etcdt.Client.Endpoints()[0]
+
+	// defer os.RemoveAll(etcdData)
+	// _, nconfig, kconfig, err := testserver.StartTestAllInOne()
+	// checkErr(err)
+
+	mconfig, err := RunEtcd()
+	checkErr(err)
+	// kconfig, err := testserver.StartConfiguredMaster(mconfig)
+	_, nconfig, components, err := testserver.DefaultAllInOneOptions()
+	checkErr(err)
+	// err = testserver.StartConfiguredNode(nconfig, components)
+	// checkErr(err)
+	//nodeconfig, err := node.BuildKubernetesNodeConfig(*nconfig, false, false)
+	//kserver := nodeconfig.KubeletServer
+	//nconfig.VolumeDirectory
+	//econfig := mconfig.EtcdConfig
+	//econfig.StorageDir = nconfig.VolumeDirectory + "/etcd"
+	//fmt.Printf("%#v\n\n", econfig.StorageDir)
+	kconfig, err := testserver.StartConfiguredAllInOne(mconfig, nconfig, components)
 	checkErr(err)
 
-	nodeconfig, err := node.BuildKubernetesNodeConfig(*nconfig, false, false)
-	kserver := nodeconfig.KubeletServer
-	defer os.RemoveAll(kserver.RootDirectory)
+	// defer os.RemoveAll(kserver.RootDirectory)
 
 	// kconfig, err := testserver.StartConfiguredAllInOne(mconfig, nconfig, components)
 	// kubeCfg := kserver.KubeletConfiguration
@@ -120,9 +143,11 @@ func main() {
 		os.Exit(1)
 	}
 
+	// fmt.Printf("%#v\n\n", etcd.Cfg)
+
 	// deploy registry
 	fmt.Printf("\n")
-	rmount := kserver.RootDirectory + "/registry"
+	rmount := nconfig.VolumeDirectory + "/registry"
 	if _, err := os.Stat(rmount); os.IsNotExist(err) {
 		os.Mkdir(rmount, 0750)
 	}
@@ -170,25 +195,23 @@ func contains(sccopts []string, sflag string) bool {
 	return false
 }
 
-/*
-func dirCleanup(rd string) error {
-	searchDir := rd
-	fileList := []string{}
-	err := filepath.Walk(searchDir, func(path string, f os.FileInfo, err error) error {
-		fileList = append(fileList, path)
-		return nil
-	})
+// RunEtcd inits etcd
+func RunEtcd() (*configapi.MasterConfig, error) {
+	var t *testing.T
 
-	for _, file := range fileList {
-		log.Println(file)
-		if err := syscall.Unmount(
-			file,
-			syscall.MNT_DETACH,
-		); err != nil {
-			return err
-		}
-
+	masterConfig, err := testserver.DefaultMasterOptionsWithTweaks(true /*start etcd server*/, false /*don't use default ports*/)
+	if err != nil {
+		return nil, err
 	}
-	return err
+
+	etcdConfig := masterConfig.EtcdConfig
+	masterConfig.EtcdConfig = nil
+	masterConfig.DNSConfig = nil
+
+	etcdserver.RunEtcd(etcdConfig)
+	etcdt := testutil.RequireEtcd(t)
+	etcdt.Terminate(t)
+	checkErr(os.RemoveAll(etcdt.DataDir))
+
+	return masterConfig, err
 }
-*/
