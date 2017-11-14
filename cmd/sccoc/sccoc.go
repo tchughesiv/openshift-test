@@ -72,7 +72,7 @@ func main() {
 
 	nodeconfig, err := node.BuildKubernetesNodeConfig(*nconfig, false, false)
 	kserver := nodeconfig.KubeletServer
-	defer checkErr(os.RemoveAll(kserver.RootDirectory))
+	checkErr(os.RemoveAll(kserver.RootDirectory))
 	kconfig, err := testserver.StartConfiguredAllInOne(mconfig, nconfig, components)
 
 	// kubeCfg := kserver.KubeletConfiguration
