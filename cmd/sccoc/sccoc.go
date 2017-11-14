@@ -73,10 +73,9 @@ func main() {
 		Path: mpath,
 		FileCheckIntervalSeconds: int64(5),
 	}
-	mconfig
-	server, err := nodeoptions.Build(nconfig)
+	server, err := nodeoptions.Build(*nconfig)
 	checkErr(err)
-	nodeconfig, err := node.New(nconfig, server)
+	_, err = node.New(*nconfig, server)
 	checkErr(err)
 	kconfig, err := testserver.StartConfiguredAllInOne(mconfig, nconfig, components)
 	checkErr(err)
