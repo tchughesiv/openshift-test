@@ -146,6 +146,7 @@ func main() {
 			if err := command.Execute(); err != nil {
 				os.Exit(1)
 			}
+			// ?? add a loop until dc cleared???
 		}
 	}
 	dcg, err = dc.Get("docker-registry", metav1.GetOptions{})
