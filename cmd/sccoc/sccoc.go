@@ -27,12 +27,14 @@ import (
 )
 
 // OPENSHIFT_SCC=anyuid ./sccoc new-app registry.centos.org/container-examples/starter-arbitrary-uid
+// maybe limit to just new-app & run???
 
 func main() {
 	var t *testing.T
 	var sflag string
 	var sccopts []string
 	sccvar := "OPENSHIFT_SCC"
+	etcdData := "/tmp/etcdtest"
 	defaultScc := bp.SecurityContextConstraintRestricted
 	_, sccenv := os.LookupEnv(sccvar)
 
@@ -46,12 +48,6 @@ func main() {
 	bootstrappedConstraints := bp.GetBootstrapSecurityContextConstraints(groups, users)
 	for _, v := range bootstrappedConstraints {
 		sccopts = append(sccopts, v.Name)
-		/*
-			if v.Name == sflag {
-				vtmp := v
-				sccn = &vtmp
-			}
-		*/
 	}
 
 	if !contains(sccopts, sflag) {
@@ -66,15 +62,20 @@ func main() {
 
 	// How can supress the "startup" logs????
 	// switch to a more permanant etcd??? in tmp... then don't cleanup
-	etcdt := testutil.RequireEtcd(t)
-	defer os.RemoveAll(etcdt.DataDir)
-	mconfig, nconfig, components, err := testserver.DefaultAllInOneOptions()
+	os.Setenv("TEST_ETCD_DIR", etcdData)
+	if _, err := os.Stat(etcdData); os.IsNotExist(err) {
+		err = os.Mkdir(etcdData, 0700)
+		checkErr(err)
+	}
+	_ = testutil.RequireEtcd(t)
+	// defer os.RemoveAll(etcdt.DataDir)
+	_, nconfig, kconfig, err := testserver.StartTestAllInOne()
 	checkErr(err)
 
 	nodeconfig, err := node.BuildKubernetesNodeConfig(*nconfig, false, false)
 	kserver := nodeconfig.KubeletServer
 	checkErr(os.RemoveAll(kserver.RootDirectory))
-	kconfig, err := testserver.StartConfiguredAllInOne(mconfig, nconfig, components)
+	// kconfig, err := testserver.StartConfiguredAllInOne(mconfig, nconfig, components)
 
 	// kubeCfg := kserver.KubeletConfiguration
 	// kclient, err := testutil.GetClusterAdminKubeClient(kconfig)
@@ -125,8 +126,8 @@ func main() {
 	if _, err := os.Stat(rmount); os.IsNotExist(err) {
 		os.Mkdir(rmount, 0750)
 	}
-	// os.Args = []string{"oc", "adm", "registry", "--service-account=registry", "--config=" + kconfig, "--mount-host=" + rmount}
-	os.Args = []string{"oc", "adm", "registry"}
+	os.Args = []string{"oc", "adm", "registry", "--service-account=registry", "--config=" + kconfig, "--mount-host=" + rmount}
+	// os.Args = []string{"oc", "adm", "registry"}
 	if err := command.Execute(); err != nil {
 		os.Exit(1)
 	}
