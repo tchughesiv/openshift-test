@@ -17,6 +17,7 @@ import (
 	"github.com/openshift/origin/pkg/cmd/util/serviceability"
 	testutil "github.com/openshift/origin/test/util"
 	testserver "github.com/openshift/origin/test/util/server"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/kubernetes/pkg/util/logs"
 
 	// install all APIs # reference oc.go
@@ -34,8 +35,7 @@ func main() {
 	var sflag string
 	var sccopts []string
 	sccvar := "OPENSHIFT_SCC"
-	etcdData := "/tmp/etcdtest"
-	os.Setenv("TEST_ETCD_DIR", etcdData)
+	os.Setenv("TEST_ETCD_DIR", "/tmp/etcdtest")
 	defaultScc := bp.SecurityContextConstraintRestricted
 	_, sccenv := os.LookupEnv(sccvar)
 
@@ -83,28 +83,12 @@ func main() {
 
 	mconfig, err := RunEtcd()
 	checkErr(err)
-	// kconfig, err := testserver.StartConfiguredMaster(mconfig)
 	_, nconfig, components, err := testserver.DefaultAllInOneOptions()
 	checkErr(err)
-	// err = testserver.StartConfiguredNode(nconfig, components)
-	// checkErr(err)
-	//nodeconfig, err := node.BuildKubernetesNodeConfig(*nconfig, false, false)
-	//kserver := nodeconfig.KubeletServer
-	//nconfig.VolumeDirectory
-	//econfig := mconfig.EtcdConfig
-	//econfig.StorageDir = nconfig.VolumeDirectory + "/etcd"
-	//fmt.Printf("%#v\n\n", econfig.StorageDir)
 	kconfig, err := testserver.StartConfiguredAllInOne(mconfig, nconfig, components)
 	checkErr(err)
-
-	// defer os.RemoveAll(kserver.RootDirectory)
-
-	// kconfig, err := testserver.StartConfiguredAllInOne(mconfig, nconfig, components)
-	// kubeCfg := kserver.KubeletConfiguration
-	// kclient, err := testutil.GetClusterAdminKubeClient(kconfig)
-	// checkErr(err)
-	// oaclient, err := testutil.GetClusterAdminClient(kconfig)
-	// checkErr(err)
+	oaclient, err := testutil.GetClusterAdminClient(kconfig)
+	checkErr(err)
 
 	logs.InitLogs()
 	defer logs.FlushLogs()
@@ -143,18 +127,28 @@ func main() {
 		os.Exit(1)
 	}
 
-	// fmt.Printf("%#v\n\n", etcd.Cfg)
+	fmt.Printf("\n")
 
 	// deploy registry
-	fmt.Printf("\n")
-	rmount := nconfig.VolumeDirectory + "/registry"
-	if _, err := os.Stat(rmount); os.IsNotExist(err) {
-		os.Mkdir(rmount, 0750)
-	}
-	os.Args = []string{"oc", "adm", "registry", "--service-account=registry", "--config=" + kconfig, "--mount-host=" + rmount}
-	// os.Args = []string{"oc", "adm", "registry"}
-	if err := command.Execute(); err != nil {
-		os.Exit(1)
+	dc, err := oaclient.DeploymentConfigs(openshift.DefaultNamespace).Get("docker-registry", metav1.GetOptions{})
+	checkErr(err)
+	if dc.GetName() == "" {
+		rmount := nconfig.VolumeDirectory + "/registry"
+		if _, err := os.Stat(rmount); os.IsNotExist(err) {
+			os.Mkdir(rmount, 0750)
+		}
+		os.Args = []string{"oc", "adm", "registry", "--service-account=registry", "--config=" + kconfig, "--mount-host=" + rmount}
+		// os.Args = []string{"oc", "adm", "registry"}
+		if err := command.Execute(); err != nil {
+			os.Exit(1)
+		}
+
+		// ensure registry exists
+		fmt.Printf("\n")
+		os.Args = []string{"oc", "rollout", "status", "dc/docker-registry", "-w"}
+		if err := command.Execute(); err != nil {
+			os.Exit(1)
+		}
 	}
 
 	fmt.Printf("\n")
@@ -163,13 +157,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	// ensure registry exists
 	fmt.Printf("\n")
-	os.Args = []string{"oc", "rollout", "status", "dc/docker-registry", "-w"}
-	if err := command.Execute(); err != nil {
-		os.Exit(1)
-	}
-
 	fmt.Printf("Using %#v scc...\n\n", sflag)
 
 	// execute cli command
@@ -211,7 +199,7 @@ func RunEtcd() (*configapi.MasterConfig, error) {
 	etcdserver.RunEtcd(etcdConfig)
 	etcdt := testutil.RequireEtcd(t)
 	etcdt.Terminate(t)
-	checkErr(os.RemoveAll(etcdt.DataDir))
+	// checkErr(os.RemoveAll(etcdt.DataDir))
 
 	return masterConfig, err
 }
