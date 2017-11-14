@@ -6,19 +6,16 @@ import (
 	"math/rand"
 	"os"
 	"runtime"
-	"testing"
 	"time"
 
 	configapi "github.com/openshift/origin/pkg/cmd/server/api"
 	bp "github.com/openshift/origin/pkg/cmd/server/bootstrappolicy"
-	"github.com/openshift/origin/pkg/cmd/server/etcd/etcdserver"
 	"github.com/openshift/origin/pkg/cmd/util/serviceability"
 	"github.com/openshift/origin/pkg/oc/cli"
-	testutil "github.com/openshift/origin/test/util"
 	testserver "github.com/openshift/origin/test/util/server"
 	"k8s.io/kubernetes/pkg/util/logs"
 
-	// install all APIs # reference oc.go
+	// install all APIs
 	_ "github.com/openshift/origin/pkg/api/install"
 	_ "k8s.io/kubernetes/pkg/api/install"
 	_ "k8s.io/kubernetes/pkg/apis/autoscaling/install"
@@ -27,6 +24,7 @@ import (
 )
 
 // OPENSHIFT_SCC=anyuid ./sccoc run test --image=registry.centos.org/container-examples/starter-arbitrary-uid
+// ./origin/cmd/oc/oc.go
 // maybe limit to just new-app & run???
 
 func main() {
@@ -60,18 +58,18 @@ func main() {
 	}
 
 	// How can supress the "startup" logs????
-	mconfig, err := RunEtcd()
-	checkErr(err)
-	_, nconfig, components, err := testserver.DefaultAllInOneOptions()
+	// mconfig, err := RunEtcd()
+	// checkErr(err)
+	mconfig, nconfig, components, err := testserver.DefaultAllInOneOptions()
 	checkErr(err)
 	// components = components.DefaultEnable("dns")
 	mpath := nconfig.VolumeDirectory + "/manifests"
+	if _, err := os.Stat(mpath); os.IsNotExist(err) {
+		os.Mkdir(mpath, 0750)
+	}
 	nconfig.PodManifestConfig = &configapi.PodManifestConfig{
 		Path: mpath,
 		FileCheckIntervalSeconds: int64(5),
-	}
-	if _, err := os.Stat(mpath); os.IsNotExist(err) {
-		os.Mkdir(mpath, 0750)
 	}
 	kconfig, err := testserver.StartConfiguredAllInOne(mconfig, nconfig, components)
 	checkErr(err)
@@ -91,7 +89,7 @@ func main() {
 	os.Setenv("KUBECONFIG", kconfig)
 	clArgs := os.Args
 	command := cli.CommandFor("oc")
-	// kcommand := cli.CommandFor("kubectl")
+	kcommand := cli.CommandFor("kubectl")
 
 	fmt.Printf("\n")
 
@@ -103,7 +101,7 @@ func main() {
 			if err := command.Execute(); err != nil {
 				os.Exit(1)
 			}
-			fmt.Printf("Added %#v scc to %#v...\n\n", a, defaultsa)
+			// fmt.Printf("Added %#v scc to %#v...\n\n", a, defaultsa)
 		} else {
 			os.Args = []string{"oc", "adm", "policy", "remove-scc-from-user", a, defaultsa}
 			if err := command.Execute(); err != nil {
@@ -160,16 +158,16 @@ func main() {
 		}
 	*/
 
-	// execute cli command
 	fmt.Printf("\n")
-	os.Args = clArgs
+	os.Args = []string{"oc", "get", "all", "--all-namespaces"}
 	if err := command.Execute(); err != nil {
 		os.Exit(1)
 	}
 
+	// execute cli command
 	fmt.Printf("\n")
-	os.Args = []string{"oc", "get", "all", "--all-namespaces"}
-	if err := command.Execute(); err != nil {
+	os.Args = clArgs
+	if err := kcommand.Execute(); err != nil {
 		os.Exit(1)
 	}
 }
@@ -190,21 +188,21 @@ func contains(sccopts []string, sflag string) bool {
 }
 
 // RunEtcd inits etcd
-func RunEtcd() (*configapi.MasterConfig, error) {
-	var t *testing.T
-
-	masterConfig, err := testserver.DefaultMasterOptionsWithTweaks(true /*start etcd server*/, false /*don't use default ports*/)
-	if err != nil {
-		return nil, err
-	}
-
-	etcdConfig := masterConfig.EtcdConfig
-	masterConfig.EtcdConfig = nil
-	masterConfig.DNSConfig = nil
-
-	etcdserver.RunEtcd(etcdConfig)
-	etcdt, _ := testutil.RequireEtcd3(t)
-	etcdt.Terminate(t)
-
-	return masterConfig, err
-}
+//func RunEtcd() (*configapi.MasterConfig, error) {
+//	var t *testing.T
+//
+//	masterConfig, err := testserver.DefaultMasterOptionsWithTweaks(true /*start etcd server*/, false /*don't use default ports*/)
+//	if err != nil {
+//		return nil, err
+//	}
+//
+//	etcdConfig := masterConfig.EtcdConfig
+//	masterConfig.EtcdConfig = nil
+//	masterConfig.DNSConfig = nil
+//
+//	etcdserver.RunEtcd(etcdConfig)
+//	etcdt, _ := testutil.RequireEtcd3(t)
+//	etcdt.Terminate(t)
+//
+//	return masterConfig, err
+//}
