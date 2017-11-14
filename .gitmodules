@@ -1,4 +1,4 @@
 [submodule "origin"]
 	path = origin
 	url = https://github.com/openshift/origin
-	branch = release-3.6
+	branch = release-3.7
