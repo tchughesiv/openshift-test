@@ -161,15 +161,6 @@ func main() {
 		}
 	*/
 
-	fmt.Printf("\n")
-	os.Args = []string{"oc", "get", "all", "--all-namespaces"}
-	if err := command.Execute(); err != nil {
-		os.Exit(1)
-	}
-
-	fmt.Printf("\n")
-	fmt.Printf("Using %#v scc...\n\n", sflag)
-
 	// execute cli command
 	fmt.Printf("\n")
 	os.Args = clArgs
