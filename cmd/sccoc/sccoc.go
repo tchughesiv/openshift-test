@@ -100,7 +100,6 @@ func main() {
 		runtime.GOMAXPROCS(runtime.NumCPU())
 	}
 
-	fmt.Printf("\n")
 	os.Setenv("KUBECONFIG", kconfig)
 	clArgs := os.Args
 	command := cli.CommandFor("oc")
@@ -133,15 +132,17 @@ func main() {
 	dcg, err := dc.Get("docker-registry", metav1.GetOptions{})
 	checkErr(err)
 	if dcg.GetName() != "" {
-		if dcg.Status.Conditions[0].Status != "True" {
-			// retry registry deployment
+		if dcg.Status.ReadyReplicas == 0 {
 			fmt.Printf("\n")
-			os.Args = []string{"oc", "rollout", "retry", "dc/docker-registry"}
+			os.Args = []string{"oc", "delete", "all", "-l", "docker-registry=default"}
 			if err := command.Execute(); err != nil {
 				os.Exit(1)
 			}
-			fmt.Printf("\n")
-			os.Args = []string{"oc", "rollout", "status", "dc/docker-registry", "-w"}
+			os.Args = []string{"oc", "delete", "clusterrolebinding.authorization.openshift.io", "registry-registry-role"}
+			if err := command.Execute(); err != nil {
+				os.Exit(1)
+			}
+			os.Args = []string{"oc", "delete", "sa", "registry"}
 			if err := command.Execute(); err != nil {
 				os.Exit(1)
 			}
@@ -150,6 +151,7 @@ func main() {
 	dcg, err = dc.Get("docker-registry", metav1.GetOptions{})
 	checkErr(err)
 	if dcg.GetName() == "" {
+		fmt.Printf("\n")
 		if _, err := os.Stat(rmount); os.IsNotExist(err) {
 			os.Mkdir(rmount, 0750)
 		}
