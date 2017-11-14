@@ -130,10 +130,28 @@ func main() {
 	fmt.Printf("\n")
 
 	// deploy registry
-	dc, err := oaclient.DeploymentConfigs(openshift.DefaultNamespace).Get("docker-registry", metav1.GetOptions{})
+	rmount := nconfig.VolumeDirectory + "/registry"
+	dc := oaclient.DeploymentConfigs(openshift.DefaultNamespace)
+	dcg, err := dc.Get("docker-registry", metav1.GetOptions{})
 	checkErr(err)
-	if dc.GetName() == "" {
-		rmount := nconfig.VolumeDirectory + "/registry"
+	if dcg.GetName() != "" {
+		if dcg.Status.Conditions[0].Status != "True" {
+			// ensure registry comes up
+			fmt.Printf("\n")
+			os.Args = []string{"oc", "rollout", "latest", "dc/docker-registry"}
+			if err := command.Execute(); err != nil {
+				os.Exit(1)
+			}
+			fmt.Printf("\n")
+			os.Args = []string{"oc", "rollout", "status", "dc/docker-registry", "-w"}
+			if err := command.Execute(); err != nil {
+				os.Exit(1)
+			}
+		}
+	}
+	dcg, err = dc.Get("docker-registry", metav1.GetOptions{})
+	checkErr(err)
+	if dcg.GetName() == "" {
 		if _, err := os.Stat(rmount); os.IsNotExist(err) {
 			os.Mkdir(rmount, 0750)
 		}
@@ -143,7 +161,7 @@ func main() {
 			os.Exit(1)
 		}
 
-		// ensure registry exists
+		// ensure registry comes up
 		fmt.Printf("\n")
 		os.Args = []string{"oc", "rollout", "status", "dc/docker-registry", "-w"}
 		if err := command.Execute(); err != nil {
