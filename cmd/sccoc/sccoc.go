@@ -65,8 +65,9 @@ func main() {
 	}
 
 	// How can supress the "startup" logs????
-	etcdt := testutil.RequireEtcd(t)
-	defer checkErr(os.RemoveAll(etcdt.DataDir))
+	// switch to a more permanant etcd??? in tmp... then don't cleanup
+	_ = testutil.RequireEtcd(t)
+	defer os.RemoveAll(etcdt.DataDir)
 	mconfig, nconfig, components, err := testserver.DefaultAllInOneOptions()
 	checkErr(err)
 
