@@ -9,12 +9,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/openshift/origin/pkg/bootstrap/docker/openshift"
-	"github.com/openshift/origin/pkg/cmd/cli"
 	configapi "github.com/openshift/origin/pkg/cmd/server/api"
 	bp "github.com/openshift/origin/pkg/cmd/server/bootstrappolicy"
 	"github.com/openshift/origin/pkg/cmd/server/etcd/etcdserver"
 	"github.com/openshift/origin/pkg/cmd/util/serviceability"
+	"github.com/openshift/origin/pkg/oc/cli"
 	testutil "github.com/openshift/origin/test/util"
 	testserver "github.com/openshift/origin/test/util/server"
 	"k8s.io/kubernetes/pkg/util/logs"
@@ -97,7 +96,7 @@ func main() {
 	fmt.Printf("\n")
 
 	// modify scc settings accordingly
-	defaultsa := "system:serviceaccount:" + openshift.DefaultNamespace + ":" + bp.DefaultServiceAccountName
+	defaultsa := "system:serviceaccount:default:" + bp.DefaultServiceAccountName
 	for _, a := range sccopts {
 		if a == sflag {
 			os.Args = []string{"oc", "adm", "policy", "add-scc-to-user", a, defaultsa}

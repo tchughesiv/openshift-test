@@ -4,7 +4,7 @@
 
 [wip] openshift scc image test tool
 
- - relies on Origin release-3.6 as a submodule
+ - relies on Origin release-3.7 as a submodule
 
 ### Getting started
 
@@ -22,7 +22,7 @@ $ make -C origin WHAT=cmd/sccoc
 
 dev
 ```shell
-$ git submodule add -f -b release-3.6 https://github.com/openshift/origin
+$ git submodule add -f -b release-3.7 https://github.com/openshift/origin
 $ ln -s ./origin/vendor
 $ ln -s ./origin/pkg
 $ ln -s ./origin/test
