@@ -10,6 +10,8 @@ import (
 
 	configapi "github.com/openshift/origin/pkg/cmd/server/api"
 	bp "github.com/openshift/origin/pkg/cmd/server/bootstrappolicy"
+	"github.com/openshift/origin/pkg/cmd/server/kubernetes/node"
+	nodeoptions "github.com/openshift/origin/pkg/cmd/server/kubernetes/node/options"
 	"github.com/openshift/origin/pkg/cmd/util/serviceability"
 	"github.com/openshift/origin/pkg/oc/cli"
 	testserver "github.com/openshift/origin/test/util/server"
@@ -71,6 +73,11 @@ func main() {
 		Path: mpath,
 		FileCheckIntervalSeconds: int64(5),
 	}
+	mconfig
+	server, err := nodeoptions.Build(nconfig)
+	checkErr(err)
+	nodeconfig, err := node.New(nconfig, server)
+	checkErr(err)
 	kconfig, err := testserver.StartConfiguredAllInOne(mconfig, nconfig, components)
 	checkErr(err)
 	//oaclient, err := testutil.GetClusterAdminClient(kconfig)
