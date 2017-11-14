@@ -125,12 +125,6 @@ func main() {
 		}
 	}
 
-	// openshift version
-	os.Args = []string{"oc", "version"}
-	if err := command.Execute(); err != nil {
-		os.Exit(1)
-	}
-
 	fmt.Printf("\n")
 
 	// deploy registry
