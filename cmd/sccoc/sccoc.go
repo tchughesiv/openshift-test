@@ -89,7 +89,7 @@ func main() {
 	os.Setenv("KUBECONFIG", kconfig)
 	clArgs := os.Args
 	command := cli.CommandFor("oc")
-	// kcommand := cli.CommandFor("kubectl")
+	kcommand := cli.CommandFor("kubectl")
 
 	fmt.Printf("\n")
 
@@ -101,63 +101,15 @@ func main() {
 			if err := command.Execute(); err != nil {
 				os.Exit(1)
 			}
-			// fmt.Printf("Added %#v scc to %#v...\n\n", a, defaultsa)
 		} else {
 			os.Args = []string{"oc", "adm", "policy", "remove-scc-from-user", a, defaultsa}
 			if err := command.Execute(); err != nil {
 				os.Exit(1)
 			}
-			// fmt.Printf("Removed %#v scc from %#v...\n\n", a, defaultsa)
 		}
 	}
 
 	fmt.Printf("\n")
-	/*
-		// deploy registry
-		rmount := nconfig.VolumeDirectory + "/registry"
-		dc := oaclient.DeploymentConfigs(openshift.DefaultNamespace)
-		dcg, err := dc.Get("docker-registry", metav1.GetOptions{})
-		checkErr(err)
-		if dcg.GetName() != "" {
-			if dcg.Status.ReadyReplicas == 0 {
-				fmt.Printf("\n")
-				os.Args = []string{"oc", "delete", "dc/docker-registry", "svc/docker-registry"}
-				if err := command.Execute(); err != nil {
-					os.Exit(1)
-				}
-				os.Args = []string{"oc", "delete", "clusterrolebinding.authorization.openshift.io", "registry-registry-role"}
-				if err := command.Execute(); err != nil {
-					os.Exit(1)
-				}
-				os.Args = []string{"oc", "delete", "sa", "registry"}
-				if err := command.Execute(); err != nil {
-					os.Exit(1)
-				}
-				// ?? add a loop until dc cleared???
-			}
-		}
-		dcg, err = dc.Get("docker-registry", metav1.GetOptions{})
-		checkErr(err)
-		if dcg.GetName() == "" {
-			fmt.Printf("\n")
-			if _, err := os.Stat(rmount); os.IsNotExist(err) {
-				os.Mkdir(rmount, 0750)
-			}
-			os.Args = []string{"oc", "adm", "registry", "--service-account=registry", "--config=" + kconfig, "--mount-host=" + rmount}
-			// os.Args = []string{"oc", "adm", "registry"}
-			if err := command.Execute(); err != nil {
-				os.Exit(1)
-			}
-
-			// ensure registry comes up
-			fmt.Printf("\n")
-			os.Args = []string{"oc", "rollout", "status", "dc/docker-registry", "-w"}
-			if err := command.Execute(); err != nil {
-				os.Exit(1)
-			}
-		}
-	*/
-
 	fmt.Printf("\n")
 	os.Args = []string{"oc", "get", "all", "--all-namespaces"}
 	if err := command.Execute(); err != nil {
@@ -167,7 +119,7 @@ func main() {
 	// execute cli command
 	fmt.Printf("\n")
 	os.Args = clArgs
-	if err := command.Execute(); err != nil {
+	if err := kcommand.Execute(); err != nil {
 		os.Exit(1)
 	}
 }
@@ -186,3 +138,49 @@ func contains(sccopts []string, sflag string) bool {
 	}
 	return false
 }
+
+/*
+	// deploy registry
+	rmount := nconfig.VolumeDirectory + "/registry"
+	dc := oaclient.DeploymentConfigs(openshift.DefaultNamespace)
+	dcg, err := dc.Get("docker-registry", metav1.GetOptions{})
+	checkErr(err)
+	if dcg.GetName() != "" {
+		if dcg.Status.ReadyReplicas == 0 {
+			fmt.Printf("\n")
+			os.Args = []string{"oc", "delete", "dc/docker-registry", "svc/docker-registry"}
+			if err := command.Execute(); err != nil {
+				os.Exit(1)
+			}
+			os.Args = []string{"oc", "delete", "clusterrolebinding.authorization.openshift.io", "registry-registry-role"}
+			if err := command.Execute(); err != nil {
+				os.Exit(1)
+			}
+			os.Args = []string{"oc", "delete", "sa", "registry"}
+			if err := command.Execute(); err != nil {
+				os.Exit(1)
+			}
+			// ?? add a loop until dc cleared???
+		}
+	}
+	dcg, err = dc.Get("docker-registry", metav1.GetOptions{})
+	checkErr(err)
+	if dcg.GetName() == "" {
+		fmt.Printf("\n")
+		if _, err := os.Stat(rmount); os.IsNotExist(err) {
+			os.Mkdir(rmount, 0750)
+		}
+		os.Args = []string{"oc", "adm", "registry", "--service-account=registry", "--config=" + kconfig, "--mount-host=" + rmount}
+		// os.Args = []string{"oc", "adm", "registry"}
+		if err := command.Execute(); err != nil {
+			os.Exit(1)
+		}
+
+		// ensure registry comes up
+		fmt.Printf("\n")
+		os.Args = []string{"oc", "rollout", "status", "dc/docker-registry", "-w"}
+		if err := command.Execute(); err != nil {
+			os.Exit(1)
+		}
+	}
+*/
