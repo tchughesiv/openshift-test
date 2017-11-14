@@ -89,7 +89,7 @@ func main() {
 	os.Setenv("KUBECONFIG", kconfig)
 	clArgs := os.Args
 	command := cli.CommandFor("oc")
-	kcommand := cli.CommandFor("kubectl")
+	// kcommand := cli.CommandFor("kubectl")
 
 	fmt.Printf("\n")
 
@@ -167,7 +167,7 @@ func main() {
 	// execute cli command
 	fmt.Printf("\n")
 	os.Args = clArgs
-	if err := kcommand.Execute(); err != nil {
+	if err := command.Execute(); err != nil {
 		os.Exit(1)
 	}
 }
@@ -186,23 +186,3 @@ func contains(sccopts []string, sflag string) bool {
 	}
 	return false
 }
-
-// RunEtcd inits etcd
-//func RunEtcd() (*configapi.MasterConfig, error) {
-//	var t *testing.T
-//
-//	masterConfig, err := testserver.DefaultMasterOptionsWithTweaks(true /*start etcd server*/, false /*don't use default ports*/)
-//	if err != nil {
-//		return nil, err
-//	}
-//
-//	etcdConfig := masterConfig.EtcdConfig
-//	masterConfig.EtcdConfig = nil
-//	masterConfig.DNSConfig = nil
-//
-//	etcdserver.RunEtcd(etcdConfig)
-//	etcdt, _ := testutil.RequireEtcd3(t)
-//	etcdt.Terminate(t)
-//
-//	return masterConfig, err
-//}
