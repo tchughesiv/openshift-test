@@ -62,25 +62,6 @@ func main() {
 	}
 
 	// How can supress the "startup" logs????
-	// switch to a more permanant etcd??? in tmp... then don't cleanup
-	//if _, err := os.Stat(etcdData); os.IsNotExist(err) {
-	//	err = os.Mkdir(etcdData, 0700)
-	//	checkErr(err)
-	//}
-	//	_, out, errout := os.Stdin, os.Stdout, os.Stderr
-
-	// _ = services.NewEtcd(etcdData)
-	// checkErr(etcd.Start())
-
-	// etcdt.Terminate(t)
-	// os.RemoveAll(etcdt.DataDir)
-	// s := etcdtest.NewUnsecuredEtcdTestClientServer(t)
-	// url = etcdt.Client.Endpoints()[0]
-
-	// defer os.RemoveAll(etcdData)
-	// _, nconfig, kconfig, err := testserver.StartTestAllInOne()
-	// checkErr(err)
-
 	mconfig, err := RunEtcd()
 	checkErr(err)
 	_, nconfig, components, err := testserver.DefaultAllInOneOptions()
