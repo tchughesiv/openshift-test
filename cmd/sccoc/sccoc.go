@@ -76,6 +76,8 @@ func main() {
 	//oaclient, err := testutil.GetClusterAdminClient(kconfig)
 	//checkErr(err)
 
+	os.Setenv("KUBECONFIG", kconfig)
+	clArgs := os.Args
 	logs.InitLogs()
 	defer logs.FlushLogs()
 	defer serviceability.BehaviorOnPanic(os.Getenv("OPENSHIFT_ON_PANIC"))()
@@ -85,9 +87,6 @@ func main() {
 	if len(os.Getenv("GOMAXPROCS")) == 0 {
 		runtime.GOMAXPROCS(runtime.NumCPU())
 	}
-
-	os.Setenv("KUBECONFIG", kconfig)
-	clArgs := os.Args
 	command := cli.CommandFor("oc")
 	kcommand := cli.CommandFor("kubectl")
 
