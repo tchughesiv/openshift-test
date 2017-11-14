@@ -68,15 +68,15 @@ func main() {
 		checkErr(err)
 	}
 	_ = testutil.RequireEtcd(t)
-	// defer os.RemoveAll(etcdt.DataDir)
+	defer os.RemoveAll(etcdData)
 	_, nconfig, kconfig, err := testserver.StartTestAllInOne()
 	checkErr(err)
 
 	nodeconfig, err := node.BuildKubernetesNodeConfig(*nconfig, false, false)
 	kserver := nodeconfig.KubeletServer
-	checkErr(os.RemoveAll(kserver.RootDirectory))
-	// kconfig, err := testserver.StartConfiguredAllInOne(mconfig, nconfig, components)
+	defer os.RemoveAll(kserver.RootDirectory)
 
+	// kconfig, err := testserver.StartConfiguredAllInOne(mconfig, nconfig, components)
 	// kubeCfg := kserver.KubeletConfiguration
 	// kclient, err := testutil.GetClusterAdminKubeClient(kconfig)
 	// checkErr(err)
