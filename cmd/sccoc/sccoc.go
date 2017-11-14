@@ -66,7 +66,7 @@ func main() {
 
 	// How can supress the "startup" logs????
 	// switch to a more permanant etcd??? in tmp... then don't cleanup
-	_ = testutil.RequireEtcd(t)
+	etcdt := testutil.RequireEtcd(t)
 	defer os.RemoveAll(etcdt.DataDir)
 	mconfig, nconfig, components, err := testserver.DefaultAllInOneOptions()
 	checkErr(err)
@@ -131,15 +131,15 @@ func main() {
 		os.Exit(1)
 	}
 
-	// ensure registry exists
 	fmt.Printf("\n")
-	os.Args = []string{"oc", "rollout", "status", "dc/docker-registry", "-w"}
+	os.Args = []string{"oc", "get", "all", "--all-namespaces"}
 	if err := command.Execute(); err != nil {
 		os.Exit(1)
 	}
 
+	// ensure registry exists
 	fmt.Printf("\n")
-	os.Args = []string{"oc", "get", "all", "--all-namespaces"}
+	os.Args = []string{"oc", "rollout", "status", "dc/docker-registry", "-w"}
 	if err := command.Execute(); err != nil {
 		os.Exit(1)
 	}
