@@ -134,7 +134,7 @@ func main() {
 	if dcg.GetName() != "" {
 		if dcg.Status.ReadyReplicas == 0 {
 			fmt.Printf("\n")
-			os.Args = []string{"oc", "delete", "all", "-l", "docker-registry=default"}
+			os.Args = []string{"oc", "delete", "dc/docker-registry", "svc/docker-registry"}
 			if err := command.Execute(); err != nil {
 				os.Exit(1)
 			}
