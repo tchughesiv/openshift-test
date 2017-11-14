@@ -140,9 +140,9 @@ func main() {
 	checkErr(err)
 	if dcg.GetName() != "" {
 		if dcg.Status.Conditions[0].Status != "True" {
-			// ensure registry comes up
+			// retry registry deployment
 			fmt.Printf("\n")
-			os.Args = []string{"oc", "rollout", "latest", "dc/docker-registry"}
+			os.Args = []string{"oc", "rollout", "retry", "dc/docker-registry"}
 			if err := command.Execute(); err != nil {
 				os.Exit(1)
 			}
