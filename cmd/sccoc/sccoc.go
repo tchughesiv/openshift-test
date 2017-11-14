@@ -108,17 +108,20 @@ func main() {
 	fmt.Printf("\n")
 
 	// modify scc settings accordingly
-	if sflag != defaultScc {
-		defaultsa := "system:serviceaccount:" + openshift.DefaultNamespace + ":" + bp.DefaultServiceAccountName
-		os.Args = []string{"oc", "adm", "policy", "remove-scc-from-user", defaultScc, defaultsa}
-		if err := command.Execute(); err != nil {
-			os.Exit(1)
+	defaultsa := "system:serviceaccount:" + openshift.DefaultNamespace + ":" + bp.DefaultServiceAccountName
+	for _, a := range sccopts {
+		if a == sflag {
+			os.Args = []string{"oc", "adm", "policy", "add-scc-to-user", sflag, defaultsa}
+			if err := command.Execute(); err != nil {
+				os.Exit(1)
+			}
+			fmt.Printf("Changed scc for %#v...\n\n", defaultsa)
+		} else {
+			os.Args = []string{"oc", "adm", "policy", "remove-scc-from-user", a, defaultsa}
+			if err := command.Execute(); err != nil {
+				os.Exit(1)
+			}
 		}
-		os.Args = []string{"oc", "adm", "policy", "add-scc-to-user", sflag, defaultsa}
-		if err := command.Execute(); err != nil {
-			os.Exit(1)
-		}
-		fmt.Printf("Changed scc for %#v...\n\n", defaultsa)
 	}
 
 	// openshift version
