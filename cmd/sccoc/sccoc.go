@@ -203,9 +203,8 @@ func RunEtcd() (*configapi.MasterConfig, error) {
 	masterConfig.DNSConfig = nil
 
 	etcdserver.RunEtcd(etcdConfig)
-	etcdt := testutil.RequireEtcd(t)
+	etcdt, _ := testutil.RequireEtcd3(t)
 	etcdt.Terminate(t)
-	// checkErr(os.RemoveAll(etcdt.DataDir))
 
 	return masterConfig, err
 }
