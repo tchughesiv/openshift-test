@@ -66,12 +66,15 @@ func main() {
 		Path: mpath,
 		FileCheckIntervalSeconds: int64(3),
 	}
-	kconfig, err := testserver.StartConfiguredMaster(mconfig)
 	// kconfig, err := testserver.StartConfiguredAllInOne(mconfig, nconfig, components)
-	checkErr(err)
+	kconfig, err := testserver.StartConfiguredMaster(mconfig)
 	if _, err := os.Stat(mpath); os.IsNotExist(err) {
 		os.Mkdir(mpath, 0755)
 	}
+	s, err := nodeoptions.Build(*nconfig)
+	checkErr(err)
+	nodeconfig, err := node.New(*nconfig, s)
+	checkErr(err)
 
 	//oaclient, err := testutil.GetClusterAdminClient(kconfig)
 	//checkErr(err)
@@ -113,13 +116,8 @@ func main() {
 	// requires higher max user watches for file method...
 	// sudo sysctl fs.inotify.max_user_watches=524288
 	// ?? make the change permanent, edit the file /etc/sysctl.conf and add the line to the end of the file
-	s, err := nodeoptions.Build(*nconfig)
-	checkErr(err)
-	nodeconfig, err := node.New(*nconfig, s)
-	checkErr(err)
-	kubeDeps := nodeconfig.KubeletDeps
 	s.RunOnce = true
-	err = app.Run(s, kubeDeps)
+	err = app.Run(s, nodeconfig.KubeletDeps)
 	checkErr(err)
 
 	/*
