@@ -27,7 +27,12 @@ import (
 
 // OPENSHIFT_SCC=anyuid ./sccoc run test --image=registry.centos.org/container-examples/starter-arbitrary-uid
 // ./origin/cmd/oc/oc.go
-// maybe limit to just new-app & run???
+// maybe limit to just run???
+
+// Flow -
+// 1. start test cluster - execute "run" against to generate yaml w/ scc
+// 2. export yaml w/ sc settings to pod manifest dir
+// 3. start real kubelet pointed to manifest dir - should deploy pod
 
 func main() {
 	var sflag string
