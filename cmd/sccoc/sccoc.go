@@ -73,9 +73,9 @@ func main() {
 		Path: mpath,
 		FileCheckIntervalSeconds: int64(5),
 	}
-	server, err := nodeoptions.Build(*nconfig)
+	s, err := nodeoptions.Build(*nconfig)
 	checkErr(err)
-	_, err = node.New(*nconfig, server)
+	nodeconfig, err := node.New(*nconfig, s)
 	checkErr(err)
 	kconfig, err := testserver.StartConfiguredAllInOne(mconfig, nconfig, components)
 	checkErr(err)
@@ -121,12 +121,15 @@ func main() {
 		os.Exit(1)
 	}
 
+	nodeconfig.RunKubelet()
+
 	// execute cli command
 	fmt.Printf("\n")
 	os.Args = clArgs
 	if err := kcommand.Execute(); err != nil {
 		os.Exit(1)
 	}
+
 }
 
 func checkErr(err error) {
