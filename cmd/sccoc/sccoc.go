@@ -122,7 +122,7 @@ func main() {
 	// ?? make the change permanent, edit the file /etc/sysctl.conf and add the line to the end of the file
 	s, err := nodeoptions.Build(*nconfig)
 	checkErr(err)
-	kubeletoptions.NewKubeletServer
+	// kubeletoptions.NewKubeletServer
 	nodeconfig, err := node.New(*nconfig, s)
 	checkErr(err)
 	kserver := nodeconfig.KubeletServer
