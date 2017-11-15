@@ -109,11 +109,6 @@ func main() {
 		}
 	}
 
-	fmt.Printf("\n")
-	os.Args = []string{"oc", "get", "all", "--all-namespaces"}
-	if err := command.Execute(); err != nil {
-		os.Exit(1)
-	}
 	// Run kubelet
 	// requires higher max user watches for file method...
 	// sudo sysctl fs.inotify.max_user_watches=524288
@@ -124,10 +119,18 @@ func main() {
 	checkErr(err)
 	kubeDeps := nodeconfig.KubeletDeps
 	s.RunOnce = true
-
-	//fmt.Printf("%#v\n", kubeCfg.PodManifestPath)
 	err = app.Run(s, kubeDeps)
 	checkErr(err)
+
+	/*
+		fmt.Printf("\n")
+		os.Args = []string{"oc", "get", "all", "--all-namespaces"}
+		if err := command.Execute(); err != nil {
+			os.Exit(1)
+		}
+	*/
+
+	//fmt.Printf("%#v\n", kubeCfg.PodManifestPath)
 
 	// execute cli command
 	fmt.Printf("\n")
