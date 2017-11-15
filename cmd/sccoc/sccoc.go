@@ -92,7 +92,7 @@ func main() {
 		runtime.GOMAXPROCS(runtime.NumCPU())
 	}
 	command := cli.CommandFor("oc")
-	kcommand := cli.CommandFor("kubectl")
+	// kcommand := cli.CommandFor("kubectl")
 
 	fmt.Printf("\n")
 
@@ -117,12 +117,18 @@ func main() {
 	// sudo sysctl fs.inotify.max_user_watches=524288
 	// ?? make the change permanent, edit the file /etc/sysctl.conf and add the line to the end of the file
 
-	s.RunOnce = true
-	s.CgroupsPerQOS = false
-	s.EnforceNodeAllocatable = []string{}
-	//fmt.Printf("%#v\n", kubeCfg.PodManifestPath)
+	// execute cli command
+	fmt.Printf("\n")
+	os.Args = clArgs
+	if err := command.Execute(); err != nil {
+		os.Exit(1)
+	}
+
+	//	s.RunOnce = true
 	err = app.Run(s, nodeconfig.KubeletDeps)
 	checkErr(err)
+
+	// fmt.Printf("%#v\n", kubeCfg.PodManifestPath)
 
 	/*
 		fmt.Printf("\n")
@@ -131,13 +137,6 @@ func main() {
 			os.Exit(1)
 		}
 	*/
-
-	// execute cli command
-	fmt.Printf("\n")
-	os.Args = clArgs
-	if err := kcommand.Execute(); err != nil {
-		os.Exit(1)
-	}
 
 }
 
