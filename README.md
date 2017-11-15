@@ -11,10 +11,6 @@
 build
 ```shell
 $ git clone https://github.com/tchughesiv/sccoc $GOROOT/src/github.com/openshift/origin
-# alternatively could... 
-# $ go get -d github.com/tchughesiv/sccoc
-# $ mkdir -p $GOROOT/src/github.com/openshift
-# $ ln -s $GOROOT/src/github.com/tchughesiv/sccoc $GOROOT/src/github.com/openshift/origin
 $ cd $GOROOT/src/github.com/openshift/origin/
 $ git submodule update --init
 $ make -C origin WHAT=cmd/sccoc

@@ -129,7 +129,7 @@ func main() {
 	kubeCfg := &kserver.KubeletConfiguration
 	//kubeDeps.Recorder = record.NewFakeRecorder(100)
 
-	//fmt.Printf("%#v\n", nfile)
+	fmt.Printf("%#v\n", kserver.OOMScoreAdj)
 	fmt.Printf("%#v\n", kubeCfg.PodManifestPath)
 	err = app.Run(kserver, &kubelet.KubeletDeps{})
 	checkErr(err)
