@@ -117,7 +117,8 @@ func main() {
 	// sudo sysctl fs.inotify.max_user_watches=524288
 	// ?? make the change permanent, edit the file /etc/sysctl.conf and add the line to the end of the file
 
-	// s.RunOnce = true
+	s.RunOnce = true
+	s.CgroupsPerQOS = false
 	err = app.Run(s, nodeconfig.KubeletDeps)
 	checkErr(err)
 
