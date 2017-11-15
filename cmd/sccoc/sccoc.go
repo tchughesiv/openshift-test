@@ -126,11 +126,8 @@ func main() {
 	checkErr(err)
 	kubeDeps := nodeconfig.KubeletDeps
 	s.RunOnce = true
-	s.RequireKubeConfig = false
-	//s.APIServerList = []string{""}
 
 	//fmt.Printf("%#v\n", kubeCfg.PodManifestPath)
-	// err = app.Run(s, &kubelet.KubeletDeps{})
 	err = app.Run(s, kubeDeps)
 	checkErr(err)
 
