@@ -17,7 +17,6 @@ import (
 	"github.com/openshift/origin/pkg/oc/cli"
 	testserver "github.com/openshift/origin/test/util/server"
 	"k8s.io/kubernetes/cmd/kubelet/app"
-	"k8s.io/kubernetes/pkg/kubelet"
 	"k8s.io/kubernetes/pkg/util/logs"
 
 	// install all APIs
@@ -64,17 +63,18 @@ func main() {
 	//cnode := admin.NewDefaultCreateNodeConfigOptions()
 	//nfile, err := cnode.CreateNodeFolder()
 	//checkErr(err)
-	mpath := "/tmp/manifests"
-	if _, err := os.Stat(mpath); os.IsNotExist(err) {
-		os.Mkdir(mpath, 0750)
-	}
+	mpath := nconfig.VolumeDirectory + "/manifests"
 	nconfig.PodManifestConfig = &configapi.PodManifestConfig{
 		Path: mpath,
 		FileCheckIntervalSeconds: int64(3),
 	}
-	//kconfig, err := testserver.StartConfiguredAllInOne(mconfig, nconfig, components)
 	kconfig, err := testserver.StartConfiguredMaster(mconfig)
+	// kconfig, err := testserver.StartConfiguredAllInOne(mconfig, nconfig, components)
 	checkErr(err)
+	if _, err := os.Stat(mpath); os.IsNotExist(err) {
+		os.Mkdir(mpath, 0755)
+	}
+
 	//oaclient, err := testutil.GetClusterAdminClient(kconfig)
 	//checkErr(err)
 
@@ -122,16 +122,16 @@ func main() {
 	// ?? make the change permanent, edit the file /etc/sysctl.conf and add the line to the end of the file
 	s, err := nodeoptions.Build(*nconfig)
 	checkErr(err)
-	// kubeletoptions.NewKubeletServer
 	nodeconfig, err := node.New(*nconfig, s)
 	checkErr(err)
-	kserver := nodeconfig.KubeletServer
-	kubeCfg := &kserver.KubeletConfiguration
-	//kubeDeps.Recorder = record.NewFakeRecorder(100)
+	kubeDeps := nodeconfig.KubeletDeps
+	s.RunOnce = true
+	s.RequireKubeConfig = false
+	//s.APIServerList = []string{""}
 
-	fmt.Printf("%#v\n", kserver.OOMScoreAdj)
-	fmt.Printf("%#v\n", kubeCfg.PodManifestPath)
-	err = app.Run(kserver, &kubelet.KubeletDeps{})
+	//fmt.Printf("%#v\n", kubeCfg.PodManifestPath)
+	// err = app.Run(s, &kubelet.KubeletDeps{})
+	err = app.Run(s, kubeDeps)
 	checkErr(err)
 
 	// execute cli command
