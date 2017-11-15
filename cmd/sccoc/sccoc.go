@@ -64,7 +64,7 @@ func main() {
 	mpath := "/tmp/manifests"
 	nconfig.PodManifestConfig = &configapi.PodManifestConfig{
 		Path: mpath,
-		FileCheckIntervalSeconds: int64(3),
+		FileCheckIntervalSeconds: int64(5),
 	}
 	// kconfig, err := testserver.StartConfiguredAllInOne(mconfig, nconfig, components)
 	kconfig, err := testserver.StartConfiguredMaster(mconfig)
@@ -124,7 +124,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	//	s.RunOnce = true
+	// s.RunOnce = true
 	err = app.Run(s, nodeconfig.KubeletDeps)
 	checkErr(err)
 
