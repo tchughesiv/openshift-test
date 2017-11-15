@@ -17,6 +17,7 @@ import (
 	"github.com/openshift/origin/pkg/oc/cli"
 	testserver "github.com/openshift/origin/test/util/server"
 	"k8s.io/kubernetes/cmd/kubelet/app"
+	"k8s.io/kubernetes/pkg/kubelet/network"
 	"k8s.io/kubernetes/pkg/util/logs"
 
 	// install all APIs
@@ -58,6 +59,7 @@ func main() {
 	}
 
 	// How can supress the "startup" logs????
+	// os.Setenv("KUBELET_NETWORK_ARGS", "")
 	mconfig, nconfig, _, err := testserver.DefaultAllInOneOptions()
 	checkErr(err)
 	//mpath := nconfig.VolumeDirectory + "/manifests"
@@ -75,6 +77,7 @@ func main() {
 	checkErr(err)
 	nodeconfig, err := node.New(*nconfig, s)
 	checkErr(err)
+	kubeDeps := nodeconfig.KubeletDeps
 
 	//oaclient, err := testutil.GetClusterAdminClient(kconfig)
 	//checkErr(err)
@@ -124,11 +127,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	// s.RunOnce = true
-	err = app.Run(s, nodeconfig.KubeletDeps)
+	s.RunOnce = true
+	kubeDeps.NetworkPlugins = []network.NetworkPlugin{}
+	err = app.Run(s, kubeDeps)
 	checkErr(err)
-
-	// fmt.Printf("%#v\n", kubeCfg.PodManifestPath)
+	fmt.Printf("%#v\n", kubeDeps.NetworkPlugins)
 
 	/*
 		fmt.Printf("\n")
