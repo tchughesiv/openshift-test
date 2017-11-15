@@ -61,7 +61,7 @@ func main() {
 	mconfig, nconfig, _, err := testserver.DefaultAllInOneOptions()
 	checkErr(err)
 	//mpath := nconfig.VolumeDirectory + "/manifests"
-	mpath := "/tmp/manifests/"
+	mpath := "/tmp/manifests"
 	nconfig.PodManifestConfig = &configapi.PodManifestConfig{
 		Path: mpath,
 		FileCheckIntervalSeconds: int64(3),
@@ -119,6 +119,8 @@ func main() {
 
 	s.RunOnce = true
 	s.CgroupsPerQOS = false
+	s.EnforceNodeAllocatable = []string{}
+	//fmt.Printf("%#v\n", kubeCfg.PodManifestPath)
 	err = app.Run(s, nodeconfig.KubeletDeps)
 	checkErr(err)
 
@@ -129,8 +131,6 @@ func main() {
 			os.Exit(1)
 		}
 	*/
-
-	//fmt.Printf("%#v\n", kubeCfg.PodManifestPath)
 
 	// execute cli command
 	fmt.Printf("\n")
