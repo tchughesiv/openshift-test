@@ -38,7 +38,6 @@ import (
 // 3. start real kubelet pointed to manifest dir - should deploy pod
 
 func main() {
-	var sflag string
 	var sccopts []string
 	sflag := cmdutil.Env("OPENSHIFT_SCC", bp.SecurityContextConstraintRestricted)
 	os.Setenv("TEST_ETCD_DIR", "/tmp/etcdtest")
