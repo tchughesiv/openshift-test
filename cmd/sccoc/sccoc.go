@@ -97,6 +97,10 @@ func main() {
 	// kcommand := cli.CommandFor("kubectl")
 
 	fmt.Printf("\n")
+	os.Args = []string{"oc", "create", "-f", "https://raw.githubusercontent.com/coreos/flannel/v0.9.0/Documentation/kube-flannel.yml"}
+	if err := command.Execute(); err != nil {
+		os.Exit(1)
+	}
 
 	// modify scc settings accordingly
 	defaultsa := "system:serviceaccount:default:" + bp.DefaultServiceAccountName
@@ -118,11 +122,6 @@ func main() {
 	// requires higher max user watches for file method...
 	// sudo sysctl fs.inotify.max_user_watches=524288
 	// ?? make the change permanent, edit the file /etc/sysctl.conf and add the line to the end of the file
-	fmt.Printf("\n")
-	os.Args = []string{"oc", "create", "-f", "https://raw.githubusercontent.com/coreos/flannel/v0.9.0/Documentation/kube-flannel.yml"}
-	if err := command.Execute(); err != nil {
-		os.Exit(1)
-	}
 
 	// execute cli command
 	fmt.Printf("\n")
