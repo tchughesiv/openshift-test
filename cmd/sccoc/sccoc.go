@@ -15,6 +15,8 @@ import (
 	"github.com/openshift/origin/pkg/cmd/util/serviceability"
 	"github.com/openshift/origin/pkg/oc/cli"
 	testserver "github.com/openshift/origin/test/util/server"
+	"k8s.io/kubernetes/cmd/kubelet/app"
+	"k8s.io/kubernetes/pkg/kubelet"
 	"k8s.io/kubernetes/pkg/util/logs"
 
 	// install all APIs
@@ -73,7 +75,7 @@ func main() {
 	}
 	nconfig.PodManifestConfig = &configapi.PodManifestConfig{
 		Path: mpath,
-		FileCheckIntervalSeconds: int64(5),
+		FileCheckIntervalSeconds: int64(3),
 	}
 	kconfig, err := testserver.StartConfiguredAllInOne(mconfig, nconfig, components)
 	checkErr(err)
@@ -113,21 +115,39 @@ func main() {
 	}
 
 	fmt.Printf("\n")
-	fmt.Printf("\n")
-	os.Args = []string{"oc", "get", "all", "--all-namespaces"}
-	if err := command.Execute(); err != nil {
-		os.Exit(1)
-	}
 
+	/*
+		fmt.Printf("\n")
+		os.Args = []string{"oc", "get", "all", "--all-namespaces"}
+		if err := command.Execute(); err != nil {
+			os.Exit(1)
+		}
+	*/
 	// Run kubelet
 	s, err := nodeoptions.Build(*nconfig)
 	checkErr(err)
 	nodeconfig, err := node.New(*nconfig, s)
 	checkErr(err)
-	fmt.Printf("%#v\n", nodeconfig.DockerClient)
-	// kserver = nodeconfig.KubeletServer
-	// kserver.ContainerRuntime = "docker"
-	nodeconfig.RunKubelet()
+	kserver := nodeconfig.KubeletServer
+	kubeCfg := &kserver.KubeletConfiguration
+	//kubeDeps.Recorder = record.NewFakeRecorder(100)
+	//if kubeDeps.CAdvisorInterface == nil {
+	//	kubeDeps.CAdvisorInterface, err = cadvisor.New(uint(kserver.CAdvisorPort), kserver.ContainerRuntime, kserver.RootDirectory)
+	//	checkErr(err)
+	//}
+
+	// requires higher max user watches for file method...
+	// sudo sysctl fs.inotify.max_user_watches=524288
+	// ?? make the change permanent, edit the file /etc/sysctl.conf and add the line to the end of the file
+	// kubeCfg.PodManifestPath = kserver.RootDirectory + "/manifests"
+	if _, err := os.Stat(kubeCfg.PodManifestPath); os.IsNotExist(err) {
+		os.Mkdir(kubeCfg.PodManifestPath, 0750)
+	}
+	fmt.Printf("%#v\n", kserver.OOMScoreAdj)
+	fmt.Printf("%#v\n", kubeCfg.PodManifestPath)
+
+	err = app.Run(kserver, &kubelet.KubeletDeps{})
+	checkErr(err)
 
 	// execute cli command
 	fmt.Printf("\n")
