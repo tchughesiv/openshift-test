@@ -17,7 +17,6 @@ import (
 	"github.com/openshift/origin/pkg/oc/cli"
 	testserver "github.com/openshift/origin/test/util/server"
 	"k8s.io/kubernetes/cmd/kubelet/app"
-	"k8s.io/kubernetes/pkg/kubelet/network"
 	"k8s.io/kubernetes/pkg/util/logs"
 
 	// install all APIs
@@ -119,6 +118,11 @@ func main() {
 	// requires higher max user watches for file method...
 	// sudo sysctl fs.inotify.max_user_watches=524288
 	// ?? make the change permanent, edit the file /etc/sysctl.conf and add the line to the end of the file
+	fmt.Printf("\n")
+	os.Args = []string{"oc", "create", "-f", "https://raw.githubusercontent.com/coreos/flannel/v0.9.0/Documentation/kube-flannel.yml"}
+	if err := command.Execute(); err != nil {
+		os.Exit(1)
+	}
 
 	// execute cli command
 	fmt.Printf("\n")
@@ -127,8 +131,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	s.RunOnce = true
-	kubeDeps.NetworkPlugins = []network.NetworkPlugin{}
+	//s.RunOnce = true
+	//kubeDeps.NetworkPlugins = []network.NetworkPlugin{}
 	err = app.Run(s, kubeDeps)
 	checkErr(err)
 	fmt.Printf("%#v\n", kubeDeps.NetworkPlugins)
