@@ -96,12 +96,6 @@ func main() {
 	command := cli.CommandFor("oc")
 	// kcommand := cli.CommandFor("kubectl")
 
-	fmt.Printf("\n")
-	os.Args = []string{"oc", "create", "-f", "https://raw.githubusercontent.com/coreos/flannel/v0.9.0/Documentation/kube-flannel.yml"}
-	if err := command.Execute(); err != nil {
-		os.Exit(1)
-	}
-
 	// modify scc settings accordingly
 	defaultsa := "system:serviceaccount:default:" + bp.DefaultServiceAccountName
 	for _, a := range sccopts {
