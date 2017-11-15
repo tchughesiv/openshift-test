@@ -60,10 +60,8 @@ func main() {
 	// How can supress the "startup" logs????
 	mconfig, nconfig, _, err := testserver.DefaultAllInOneOptions()
 	checkErr(err)
-	//cnode := admin.NewDefaultCreateNodeConfigOptions()
-	//nfile, err := cnode.CreateNodeFolder()
-	//checkErr(err)
-	mpath := nconfig.VolumeDirectory + "/manifests"
+	//mpath := nconfig.VolumeDirectory + "/manifests"
+	mpath := "/tmp/manifests"
 	nconfig.PodManifestConfig = &configapi.PodManifestConfig{
 		Path: mpath,
 		FileCheckIntervalSeconds: int64(3),
