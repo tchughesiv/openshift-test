@@ -12,6 +12,7 @@ import (
 	bp "github.com/openshift/origin/pkg/cmd/server/bootstrappolicy"
 	"github.com/openshift/origin/pkg/cmd/server/kubernetes/node"
 	nodeoptions "github.com/openshift/origin/pkg/cmd/server/kubernetes/node/options"
+	cmdutil "github.com/openshift/origin/pkg/cmd/util"
 	"github.com/openshift/origin/pkg/cmd/util/serviceability"
 	"github.com/openshift/origin/pkg/oc/cli"
 	testserver "github.com/openshift/origin/test/util/server"
@@ -39,16 +40,8 @@ import (
 func main() {
 	var sflag string
 	var sccopts []string
-	sccvar := "OPENSHIFT_SCC"
+	sflag := cmdutil.Env("OPENSHIFT_SCC", bp.SecurityContextConstraintRestricted)
 	os.Setenv("TEST_ETCD_DIR", "/tmp/etcdtest")
-	defaultScc := bp.SecurityContextConstraintRestricted
-	_, sccenv := os.LookupEnv(sccvar)
-
-	if sccenv {
-		sflag = os.Getenv(sccvar)
-	} else {
-		sflag = defaultScc
-	}
 
 	groups, users := bp.GetBoostrapSCCAccess(bp.DefaultOpenShiftInfraNamespace)
 	bootstrappedConstraints := bp.GetBootstrapSecurityContextConstraints(groups, users)
@@ -69,7 +62,10 @@ func main() {
 	// How can supress the "startup" logs????
 	mconfig, nconfig, _, err := testserver.DefaultAllInOneOptions()
 	checkErr(err)
-	mpath := nconfig.VolumeDirectory + "/manifests"
+	//cnode := admin.NewDefaultCreateNodeConfigOptions()
+	//nfile, err := cnode.CreateNodeFolder()
+	//checkErr(err)
+	mpath := "/tmp/manifests"
 	if _, err := os.Stat(mpath); os.IsNotExist(err) {
 		os.Mkdir(mpath, 0750)
 	}
@@ -77,14 +73,15 @@ func main() {
 		Path: mpath,
 		FileCheckIntervalSeconds: int64(3),
 	}
+	//kconfig, err := testserver.StartConfiguredAllInOne(mconfig, nconfig, components)
 	kconfig, err := testserver.StartConfiguredMaster(mconfig)
 	checkErr(err)
-	// kconfig, err := testserver.StartConfiguredAllInOne(mconfig, nconfig, components)
 	//oaclient, err := testutil.GetClusterAdminClient(kconfig)
 	//checkErr(err)
 
 	os.Setenv("KUBECONFIG", kconfig)
 	clArgs := os.Args
+
 	logs.InitLogs()
 	defer logs.FlushLogs()
 	defer serviceability.BehaviorOnPanic(os.Getenv("OPENSHIFT_ON_PANIC"))()
@@ -116,35 +113,25 @@ func main() {
 	}
 
 	fmt.Printf("\n")
-
-	fmt.Printf("\n")
 	os.Args = []string{"oc", "get", "all", "--all-namespaces"}
 	if err := command.Execute(); err != nil {
 		os.Exit(1)
 	}
 	// Run kubelet
+	// requires higher max user watches for file method...
+	// sudo sysctl fs.inotify.max_user_watches=524288
+	// ?? make the change permanent, edit the file /etc/sysctl.conf and add the line to the end of the file
 	s, err := nodeoptions.Build(*nconfig)
 	checkErr(err)
+	kubeletoptions.NewKubeletServer
 	nodeconfig, err := node.New(*nconfig, s)
 	checkErr(err)
 	kserver := nodeconfig.KubeletServer
 	kubeCfg := &kserver.KubeletConfiguration
 	//kubeDeps.Recorder = record.NewFakeRecorder(100)
-	//if kubeDeps.CAdvisorInterface == nil {
-	//	kubeDeps.CAdvisorInterface, err = cadvisor.New(uint(kserver.CAdvisorPort), kserver.ContainerRuntime, kserver.RootDirectory)
-	//	checkErr(err)
-	//}
 
-	// requires higher max user watches for file method...
-	// sudo sysctl fs.inotify.max_user_watches=524288
-	// ?? make the change permanent, edit the file /etc/sysctl.conf and add the line to the end of the file
-	// kubeCfg.PodManifestPath = kserver.RootDirectory + "/manifests"
-	if _, err := os.Stat(kubeCfg.PodManifestPath); os.IsNotExist(err) {
-		os.Mkdir(kubeCfg.PodManifestPath, 0750)
-	}
-	fmt.Printf("%#v\n", kserver.OOMScoreAdj)
+	//fmt.Printf("%#v\n", nfile)
 	fmt.Printf("%#v\n", kubeCfg.PodManifestPath)
-
 	err = app.Run(kserver, &kubelet.KubeletDeps{})
 	checkErr(err)
 
