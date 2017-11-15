@@ -67,7 +67,7 @@ func main() {
 	}
 
 	// How can supress the "startup" logs????
-	mconfig, nconfig, components, err := testserver.DefaultAllInOneOptions()
+	mconfig, nconfig, _, err := testserver.DefaultAllInOneOptions()
 	checkErr(err)
 	mpath := nconfig.VolumeDirectory + "/manifests"
 	if _, err := os.Stat(mpath); os.IsNotExist(err) {
@@ -77,8 +77,9 @@ func main() {
 		Path: mpath,
 		FileCheckIntervalSeconds: int64(3),
 	}
-	kconfig, err := testserver.StartConfiguredAllInOne(mconfig, nconfig, components)
+	kconfig, err := testserver.StartConfiguredMaster(mconfig)
 	checkErr(err)
+	// kconfig, err := testserver.StartConfiguredAllInOne(mconfig, nconfig, components)
 	//oaclient, err := testutil.GetClusterAdminClient(kconfig)
 	//checkErr(err)
 
@@ -116,13 +117,11 @@ func main() {
 
 	fmt.Printf("\n")
 
-	/*
-		fmt.Printf("\n")
-		os.Args = []string{"oc", "get", "all", "--all-namespaces"}
-		if err := command.Execute(); err != nil {
-			os.Exit(1)
-		}
-	*/
+	fmt.Printf("\n")
+	os.Args = []string{"oc", "get", "all", "--all-namespaces"}
+	if err := command.Execute(); err != nil {
+		os.Exit(1)
+	}
 	// Run kubelet
 	s, err := nodeoptions.Build(*nconfig)
 	checkErr(err)
