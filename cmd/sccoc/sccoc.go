@@ -60,11 +60,8 @@ func main() {
 	}
 
 	// How can supress the "startup" logs????
-	// mconfig, err := RunEtcd()
-	// checkErr(err)
 	mconfig, nconfig, components, err := testserver.DefaultAllInOneOptions()
 	checkErr(err)
-	// components = components.DefaultEnable("dns")
 	mpath := nconfig.VolumeDirectory + "/manifests"
 	if _, err := os.Stat(mpath); os.IsNotExist(err) {
 		os.Mkdir(mpath, 0750)
@@ -73,10 +70,6 @@ func main() {
 		Path: mpath,
 		FileCheckIntervalSeconds: int64(5),
 	}
-	s, err := nodeoptions.Build(*nconfig)
-	checkErr(err)
-	nodeconfig, err := node.New(*nconfig, s)
-	checkErr(err)
 	kconfig, err := testserver.StartConfiguredAllInOne(mconfig, nconfig, components)
 	checkErr(err)
 	//oaclient, err := testutil.GetClusterAdminClient(kconfig)
@@ -121,6 +114,14 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Run kubelet
+	s, err := nodeoptions.Build(*nconfig)
+	checkErr(err)
+	nodeconfig, err := node.New(*nconfig, s)
+	checkErr(err)
+	fmt.Printf("%#v\n", nodeconfig.DockerClient)
+	// kserver = nodeconfig.KubeletServer
+	// kserver.ContainerRuntime = "docker"
 	nodeconfig.RunKubelet()
 
 	// execute cli command
