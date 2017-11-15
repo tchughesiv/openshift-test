@@ -61,7 +61,7 @@ func main() {
 	mconfig, nconfig, _, err := testserver.DefaultAllInOneOptions()
 	checkErr(err)
 	//mpath := nconfig.VolumeDirectory + "/manifests"
-	mpath := "/tmp/manifests"
+	mpath := "/tmp/manifests/"
 	nconfig.PodManifestConfig = &configapi.PodManifestConfig{
 		Path: mpath,
 		FileCheckIntervalSeconds: int64(3),
@@ -116,7 +116,8 @@ func main() {
 	// requires higher max user watches for file method...
 	// sudo sysctl fs.inotify.max_user_watches=524288
 	// ?? make the change permanent, edit the file /etc/sysctl.conf and add the line to the end of the file
-	s.RunOnce = true
+
+	// s.RunOnce = true
 	err = app.Run(s, nodeconfig.KubeletDeps)
 	checkErr(err)
 
