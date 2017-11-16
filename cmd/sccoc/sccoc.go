@@ -29,12 +29,14 @@ import (
 
 // OPENSHIFT_SCC=anyuid ./sccoc run test --image=registry.centos.org/container-examples/starter-arbitrary-uid
 // ./origin/cmd/oc/oc.go
+// sudo KUBECONFIG=/tmp/openshift-integration/openshift.local.config/master/admin.kubeconfig oc get all --all-namespaces
 // maybe limit to just run???
 
 // Flow -
-// 1. start test cluster - execute "run" against to generate yaml w/ scc
-// 2. export yaml w/ sc settings to pod manifest dir
-// 3. start real kubelet pointed to manifest dir - should deploy pod
+// 1. start test master
+// 2. execute "run" against to generate pod yaml w/ scc
+// 3. export yaml w/ sc settings to pod manifest dir
+// 4. start real kubelet pointed to manifest dir - should deploy pod
 
 func main() {
 	var sccopts []string
