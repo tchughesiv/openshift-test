@@ -9,8 +9,8 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/ghodss/yaml"
 	configapi "github.com/openshift/origin/pkg/cmd/server/api"
-	"github.com/openshift/origin/pkg/cmd/server/api/latest"
 	bp "github.com/openshift/origin/pkg/cmd/server/bootstrappolicy"
 	"github.com/openshift/origin/pkg/cmd/server/kubernetes/node"
 	nodeoptions "github.com/openshift/origin/pkg/cmd/server/kubernetes/node/options"
@@ -72,7 +72,7 @@ func main() {
 	}
 
 	// How can supress the "startup" logs????
-	// os.Setenv("KUBELET_NETWORK_ARGS", "")
+	//os.Setenv("KUBELET_NETWORK_ARGS", "")
 	mconfig, nconfig, _, err := testserver.DefaultAllInOneOptions()
 	checkErr(err)
 	mpath := testutil.GetBaseDir() + "/manifests"
@@ -123,7 +123,7 @@ func main() {
 		runtime.GOMAXPROCS(runtime.NumCPU())
 	}
 	command := cli.CommandFor("oc")
-	kcommand := cli.CommandFor("kubectl")
+	// kcommand := cli.CommandFor("kubectl")
 
 	// modify scc settings accordingly
 	sa := "system:serviceaccount:" + namespace + ":" + bp.DefaultServiceAccountName
@@ -148,16 +148,9 @@ func main() {
 		}
 	}
 
-	/*
-		ns, err := kclient.Core().Namespaces().Get(namespace, metav1.GetOptions{})
-		checkErr(err)
-		fmt.Println(ns.Annotations)
-	*/
-
 	// execute cli command
 	clArgs = append(clArgs, "--restart=Never")
 	clArgs = append(clArgs, "--namespace="+namespace)
-
 	os.Args = clArgs
 	if err := command.Execute(); err != nil {
 		os.Exit(1)
@@ -177,8 +170,9 @@ func main() {
 	pod.ObjectMeta.ResourceVersion = ""
 
 	podyf := mpath + "/" + pod.Name + "-pod.yaml"
-	//pyaml, err := yaml.JSONToYAML(pod)
-	pyaml, err := latest.WriteYAML(pod)
+	jpod, err := json.Marshal(pod)
+	checkErr(err)
+	pyaml, err := yaml.JSONToYAML(jpod)
 	checkErr(err)
 	ioutil.WriteFile(podyf, pyaml, os.FileMode(0600))
 
@@ -191,19 +185,13 @@ func main() {
 	err = app.Run(s, kubeDeps)
 	checkErr(err)
 
-	os.Args = []string{"oc", "get", "pod", pod.GetName(), "--namespace=" + namespace, "--output=yaml"}
-	if err := kcommand.Execute(); err != nil {
-		os.Exit(1)
-	}
-
-	fmt.Println(pod.GetObjectKind())
-	fmt.Println(string(pyaml))
+	fmt.Println("")
+	fmt.Println(podyf)
 
 	/*
-		selector := labels.SelectorFromSet(dc.Spec.Selector)
-		//sortBy := func(pods []*v1.Pod) sort.Interface { return controller.ByLogging(pods) }
-		sortBy := func(pods []*v1.Pod) sort.Interface { return sort.Reverse(controller.ActivePods(pods)) }
-		pod, _, err := kcmdutil.GetFirstPod(kc.Core(), namespace, selector, time.Second*10, sortBy)
-		checkErr(err)
+		os.Args = []string{"oc", "get", "pod", pod.GetName(), "--namespace=" + namespace, "--output=yaml"}
+		if err := kcommand.Execute(); err != nil {
+			os.Exit(1)
+		}
 	*/
 }
