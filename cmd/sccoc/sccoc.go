@@ -122,9 +122,6 @@ func main() {
 	appsClient, err := f.OpenshiftInternalAppsClient()
 	checkErr(err)
 
-	dcl, err := appsClient.Apps().DeploymentConfigs(namespace).List(metav1.ListOptions{})
-	checkErr(err)
-
 	ns, err := kclient.Core().Namespaces().Get(namespace, metav1.GetOptions{})
 	checkErr(err)
 	fmt.Println(ns.Annotations)
@@ -154,6 +151,14 @@ func main() {
 	if err := command.Execute(); err != nil {
 		os.Exit(1)
 	}
+
+	podint := kclient.Core().Pods(namespace)
+	podl, err := podint.List(metav1.ListOptions{})
+	checkErr(err)
+	pod, err := podint.Get(podl.Items[0].GetName(), metav1.GetOptions{})
+	checkErr(err)
+	fmt.Println(pod)
+
 	s.RunOnce = true
 	err = app.Run(s, kubeDeps)
 	checkErr(err)
