@@ -47,7 +47,7 @@ import (
 
 func main() {
 	var sccopts []string
-	namespace := "sccoc"
+	namespace := "default"
 	sflag := cmdutil.Env("OPENSHIFT_SCC", bp.SecurityContextConstraintRestricted)
 	os.Setenv("TEST_ETCD_DIR", testutil.GetBaseDir()+"/etcd")
 
@@ -105,11 +105,12 @@ func main() {
 	command := cli.CommandFor("oc")
 	kcommand := cli.CommandFor("kubectl")
 
-	os.Args = []string{"oc", "new-project", namespace}
-	if err := command.Execute(); err != nil {
-		os.Exit(1)
-	}
-
+	/*
+		os.Args = []string{"oc", "new-project", namespace}
+		if err := command.Execute(); err != nil {
+			os.Exit(1)
+		}
+	*/
 	// Run kubelet
 	// requires higher max user watches for file method...
 	// sudo sysctl fs.inotify.max_user_watches=524288
@@ -184,12 +185,12 @@ func main() {
 	err = app.Run(s, kubeDeps)
 	checkErr(err)
 
-	os.Args = []string{"oc", "get", "pod", pod.Name}
+	os.Args = []string{"oc", "get", "pod", pod.GetName(), "--output=yaml"}
 	if err := kcommand.Execute(); err != nil {
 		os.Exit(1)
 	}
 
-	fmt.Println(pyaml)
+	// fmt.Println(string(pyaml))
 
 	/*
 		selector := labels.SelectorFromSet(dc.Spec.Selector)
