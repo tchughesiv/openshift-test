@@ -45,7 +45,7 @@ import (
 
 func main() {
 	var sccopts []string
-	namespace := "default"
+	namespace := "sccoc"
 	sflag := cmdutil.Env("OPENSHIFT_SCC", bp.SecurityContextConstraintRestricted)
 	os.Setenv("TEST_ETCD_DIR", testutil.GetBaseDir()+"/etcd")
 
@@ -55,6 +55,7 @@ func main() {
 	}
 	clArgs := os.Args
 	clArgs = append(clArgs, "--restart=Never")
+	clArgs = append(clArgs, "-n"+namespace)
 	groups, users := bp.GetBoostrapSCCAccess(bp.DefaultOpenShiftInfraNamespace)
 	for _, v := range bp.GetBootstrapSecurityContextConstraints(groups, users) {
 		sccopts = append(sccopts, v.Name)
@@ -102,20 +103,9 @@ func main() {
 	command := cli.CommandFor("oc")
 	// kcommand := cli.CommandFor("kubectl")
 
-	// modify scc settings accordingly
-	defaultsa := "system:serviceaccount:default:" + bp.DefaultServiceAccountName
-	for _, a := range sccopts {
-		if a == sflag {
-			os.Args = []string{"oc", "adm", "policy", "add-scc-to-user", a, defaultsa}
-			if err := command.Execute(); err != nil {
-				os.Exit(1)
-			}
-		} else {
-			os.Args = []string{"oc", "adm", "policy", "remove-scc-from-user", a, defaultsa}
-			if err := command.Execute(); err != nil {
-				os.Exit(1)
-			}
-		}
+	os.Args = []string{"oc", "new-project", namespace}
+	if err := command.Execute(); err != nil {
+		os.Exit(1)
 	}
 
 	// Run kubelet
@@ -123,25 +113,47 @@ func main() {
 	// sudo sysctl fs.inotify.max_user_watches=524288
 	// ?? make the change permanent, edit the file /etc/sysctl.conf and add the line to the end of the file
 
-	// execute cli command
-	os.Args = clArgs
-	if err := command.Execute(); err != nil {
-		os.Exit(1)
-	}
 	cfg, err := config.NewOpenShiftClientConfigLoadingRules().Load()
 	checkErr(err)
 	defaultCfg := kclientcmd.NewDefaultClientConfig(*cfg, &kclientcmd.ConfigOverrides{})
 	f := clientcmd.NewFactory(defaultCfg)
-	_, err = f.ClientSet()
+	kclient, err := f.ClientSet()
 	checkErr(err)
 	appsClient, err := f.OpenshiftInternalAppsClient()
 	checkErr(err)
 
 	dcl, err := appsClient.Apps().DeploymentConfigs(namespace).List(metav1.ListOptions{})
 	checkErr(err)
-	dc, err := appsClient.Apps().DeploymentConfigs(namespace).Get(dcl.Items[0].GetName(), metav1.GetOptions{})
-	checkErr(err)
 
+	ns, err := kclient.Core().Namespaces().Get(namespace, metav1.GetOptions{})
+	checkErr(err)
+	fmt.Println(ns.Annotations)
+
+	sas, err := kclient.Core().ServiceAccounts(namespace).List(metav1.ListOptions{})
+	checkErr(err)
+	fmt.Println(sas.Items)
+
+	// modify scc settings accordingly
+	sa := "system:serviceaccount:" + namespace + ":" + bp.DefaultServiceAccountName
+	for _, a := range sccopts {
+		if a == sflag {
+			os.Args = []string{"oc", "adm", "policy", "add-scc-to-user", a, sa}
+			if err := command.Execute(); err != nil {
+				os.Exit(1)
+			}
+		} else {
+			os.Args = []string{"oc", "adm", "policy", "remove-scc-from-user", a, sa}
+			if err := command.Execute(); err != nil {
+				os.Exit(1)
+			}
+		}
+	}
+
+	// execute cli command
+	os.Args = clArgs
+	if err := command.Execute(); err != nil {
+		os.Exit(1)
+	}
 	s.RunOnce = true
 	err = app.Run(s, kubeDeps)
 	checkErr(err)
@@ -154,7 +166,7 @@ func main() {
 		checkErr(err)
 	*/
 	fmt.Printf("\n")
-	fmt.Println(dc)
+	fmt.Println(dcl)
 	//fmt.Println(pod)
 
 	/*
