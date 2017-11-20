@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"math/rand"
 	"os"
 	"runtime"
@@ -23,9 +22,9 @@ import (
 	testutil "github.com/openshift/origin/test/util"
 	testserver "github.com/openshift/origin/test/util/server"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apiserver/pkg/util/logs"
 	kclientcmd "k8s.io/client-go/tools/clientcmd"
 	"k8s.io/kubernetes/cmd/kubelet/app"
+	"k8s.io/kubernetes/pkg/util/logs"
 
 	// install all APIs
 	_ "github.com/openshift/origin/pkg/api/install"
@@ -208,19 +207,4 @@ func main() {
 		}
 	*/
 
-}
-
-func checkErr(err error) {
-	if err != nil {
-		log.Println(err)
-	}
-}
-
-func contains(sccopts []string, sflag string) bool {
-	for _, a := range sccopts {
-		if a == sflag {
-			return true
-		}
-	}
-	return false
 }
