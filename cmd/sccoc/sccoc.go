@@ -122,13 +122,23 @@ func main() {
 	_, err = f.OpenshiftInternalAppsClient()
 	checkErr(err)
 
-	ns, err := kclient.Core().Namespaces().Get(namespace, metav1.GetOptions{})
-	checkErr(err)
-	fmt.Println(ns.Annotations)
+	_, err = kclient.Core().ServiceAccounts(namespace).Get(bp.DefaultServiceAccountName, metav1.GetOptions{})
+	i := 0
+	for err != nil {
+		if i < 5 {
+			time.Sleep(time.Second * 3)
+			_, err = kclient.Core().ServiceAccounts(namespace).Get(bp.DefaultServiceAccountName, metav1.GetOptions{})
+		}
+		i++
+	}
 
 	sas, err := kclient.Core().ServiceAccounts(namespace).List(metav1.ListOptions{})
 	checkErr(err)
 	fmt.Println(sas.Items)
+
+	ns, err := kclient.Core().Namespaces().Get(namespace, metav1.GetOptions{})
+	checkErr(err)
+	fmt.Println(ns.Annotations)
 
 	// modify scc settings accordingly
 	sa := "system:serviceaccount:" + namespace + ":" + bp.DefaultServiceAccountName
@@ -158,7 +168,7 @@ func main() {
 	checkErr(err)
 	pod, err := podint.Get(podl.Items[0].GetName(), metav1.GetOptions{})
 	checkErr(err)
-	fmt.Println(pod)
+	fmt.Println(pod.Spec)
 
 	s.RunOnce = true
 	err = app.Run(s, kubeDeps)
