@@ -125,6 +125,7 @@ func main() {
 	_, err = kclient.Core().ServiceAccounts(namespace).Get(bp.DefaultServiceAccountName, metav1.GetOptions{})
 	i := 0
 	for err != nil {
+		fmt.Println(i)
 		if i < 5 {
 			time.Sleep(time.Second * 3)
 			_, err = kclient.Core().ServiceAccounts(namespace).Get(bp.DefaultServiceAccountName, metav1.GetOptions{})
