@@ -145,10 +145,8 @@ func main() {
 
 	// modify scc settings accordingly
 	sa := "system:serviceaccount:" + namespace + ":" + bp.DefaultServiceAccountName
-	//oc patch scc hostmount-anyuid --patch '{"priority":1}'
 	patch, err := json.Marshal(scc{Priority: 1})
 	checkErr(err)
-
 	fmt.Println(string(patch))
 
 	os.Args = []string{"oc", "patch", "scc", sflag, "--patch", string(patch)}
