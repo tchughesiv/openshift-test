@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -144,19 +145,36 @@ func main() {
 
 	// modify scc settings accordingly
 	sa := "system:serviceaccount:" + namespace + ":" + bp.DefaultServiceAccountName
-	for _, a := range sccopts {
-		if a == sflag {
-			os.Args = []string{"oc", "adm", "policy", "add-scc-to-user", a, sa}
-			if err := command.Execute(); err != nil {
-				os.Exit(1)
-			}
-		} else {
-			os.Args = []string{"oc", "adm", "policy", "remove-scc-from-user", a, sa}
-			if err := command.Execute(); err != nil {
-				os.Exit(1)
+	//oc patch scc hostmount-anyuid --patch '{"priority":1}'
+	patch, err := json.Marshal(scc{Priority: 1})
+	checkErr(err)
+
+	fmt.Println(string(patch))
+
+	os.Args = []string{"oc", "patch", "scc", sflag, "--patch", string(patch)}
+	if err := command.Execute(); err != nil {
+		os.Exit(1)
+	}
+	os.Args = []string{"oc", "adm", "policy", "add-scc-to-user", sflag, sa}
+	if err := command.Execute(); err != nil {
+		os.Exit(1)
+	}
+
+	/*
+		for _, a := range sccopts {
+			if a == sflag {
+				os.Args = []string{"oc", "adm", "policy", "add-scc-to-user", a, sa}
+				if err := command.Execute(); err != nil {
+					os.Exit(1)
+				}
+			} else {
+				os.Args = []string{"oc", "adm", "policy", "remove-scc-from-user", a, sa}
+				if err := command.Execute(); err != nil {
+					os.Exit(1)
+				}
 			}
 		}
-	}
+	*/
 
 	ns, err := kclient.Core().Namespaces().Get(namespace, metav1.GetOptions{})
 	checkErr(err)
@@ -223,4 +241,8 @@ func contains(sccopts []string, sflag string) bool {
 		}
 	}
 	return false
+}
+
+type scc struct {
+	Priority int `json:"priority"`
 }
