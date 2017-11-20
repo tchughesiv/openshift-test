@@ -125,7 +125,7 @@ func main() {
 	_, err = kclient.Core().ServiceAccounts(namespace).Get(bp.DefaultServiceAccountName, metav1.GetOptions{})
 	i := 0
 	for err != nil {
-		fmt.Println(i)
+		fmt.Printf("\n%#v\n", i)
 		if i < 5 {
 			time.Sleep(time.Second * 3)
 			_, err = kclient.Core().ServiceAccounts(namespace).Get(bp.DefaultServiceAccountName, metav1.GetOptions{})
@@ -133,13 +133,11 @@ func main() {
 		i++
 	}
 
-	sas, err := kclient.Core().ServiceAccounts(namespace).List(metav1.ListOptions{})
-	checkErr(err)
-	fmt.Println(sas.Items)
-
-	ns, err := kclient.Core().Namespaces().Get(namespace, metav1.GetOptions{})
-	checkErr(err)
-	fmt.Println(ns.Annotations)
+	/*
+		sas, err := kclient.Core().ServiceAccounts(namespace).List(metav1.ListOptions{})
+		checkErr(err)
+		fmt.Println(sas.Items)
+	*/
 
 	// modify scc settings accordingly
 	sa := "system:serviceaccount:" + namespace + ":" + bp.DefaultServiceAccountName
@@ -156,6 +154,10 @@ func main() {
 			}
 		}
 	}
+
+	ns, err := kclient.Core().Namespaces().Get(namespace, metav1.GetOptions{})
+	checkErr(err)
+	fmt.Println(ns.Annotations)
 
 	// execute cli command
 	os.Args = clArgs
