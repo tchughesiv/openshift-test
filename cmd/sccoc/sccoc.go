@@ -119,7 +119,7 @@ func main() {
 	f := clientcmd.NewFactory(defaultCfg)
 	kclient, err := f.ClientSet()
 	checkErr(err)
-	appsClient, err := f.OpenshiftInternalAppsClient()
+	_, err = f.OpenshiftInternalAppsClient()
 	checkErr(err)
 
 	ns, err := kclient.Core().Namespaces().Get(namespace, metav1.GetOptions{})
@@ -152,6 +152,7 @@ func main() {
 		os.Exit(1)
 	}
 
+	fmt.Printf("\n")
 	podint := kclient.Core().Pods(namespace)
 	podl, err := podint.List(metav1.ListOptions{})
 	checkErr(err)
@@ -170,9 +171,6 @@ func main() {
 		pod, _, err := kcmdutil.GetFirstPod(kc.Core(), namespace, selector, time.Second*10, sortBy)
 		checkErr(err)
 	*/
-	fmt.Printf("\n")
-	fmt.Println(dcl)
-	//fmt.Println(pod)
 
 	/*
 		fmt.Printf("\n")
