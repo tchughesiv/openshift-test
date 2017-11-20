@@ -6,7 +6,6 @@ import (
 	"math/rand"
 	"os"
 	"runtime"
-	"sort"
 	"time"
 
 	configapi "github.com/openshift/origin/pkg/cmd/server/api"
@@ -21,12 +20,8 @@ import (
 	testutil "github.com/openshift/origin/test/util"
 	testserver "github.com/openshift/origin/test/util/server"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	kclientcmd "k8s.io/client-go/tools/clientcmd"
 	"k8s.io/kubernetes/cmd/kubelet/app"
-	"k8s.io/kubernetes/pkg/api/v1"
-	"k8s.io/kubernetes/pkg/controller"
-	kcmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
 	"k8s.io/kubernetes/pkg/util/logs"
 
 	// install all APIs
@@ -59,6 +54,7 @@ func main() {
 		os.Exit(1)
 	}
 	clArgs := os.Args
+	clArgs = append(clArgs, "--restart=Never")
 	groups, users := bp.GetBoostrapSCCAccess(bp.DefaultOpenShiftInfraNamespace)
 	for _, v := range bp.GetBootstrapSecurityContextConstraints(groups, users) {
 		sccopts = append(sccopts, v.Name)
@@ -128,7 +124,6 @@ func main() {
 	// ?? make the change permanent, edit the file /etc/sysctl.conf and add the line to the end of the file
 
 	// execute cli command
-	fmt.Printf("\n")
 	os.Args = clArgs
 	if err := command.Execute(); err != nil {
 		os.Exit(1)
@@ -137,7 +132,7 @@ func main() {
 	checkErr(err)
 	defaultCfg := kclientcmd.NewDefaultClientConfig(*cfg, &kclientcmd.ConfigOverrides{})
 	f := clientcmd.NewFactory(defaultCfg)
-	kc, err := f.ClientSet()
+	_, err = f.ClientSet()
 	checkErr(err)
 	appsClient, err := f.OpenshiftInternalAppsClient()
 	checkErr(err)
@@ -151,14 +146,16 @@ func main() {
 	err = app.Run(s, kubeDeps)
 	checkErr(err)
 
-	selector := labels.SelectorFromSet(dc.Spec.Selector)
-	//sortBy := func(pods []*v1.Pod) sort.Interface { return controller.ByLogging(pods) }
-	sortBy := func(pods []*v1.Pod) sort.Interface { return sort.Reverse(controller.ActivePods(pods)) }
-	pod, _, err := kcmdutil.GetFirstPod(kc.Core(), namespace, selector, time.Second*10, sortBy)
-	checkErr(err)
-
+	/*
+		selector := labels.SelectorFromSet(dc.Spec.Selector)
+		//sortBy := func(pods []*v1.Pod) sort.Interface { return controller.ByLogging(pods) }
+		sortBy := func(pods []*v1.Pod) sort.Interface { return sort.Reverse(controller.ActivePods(pods)) }
+		pod, _, err := kcmdutil.GetFirstPod(kc.Core(), namespace, selector, time.Second*10, sortBy)
+		checkErr(err)
+	*/
+	fmt.Printf("\n")
 	fmt.Println(dc)
-	fmt.Println(pod)
+	//fmt.Println(pod)
 
 	/*
 		fmt.Printf("\n")
