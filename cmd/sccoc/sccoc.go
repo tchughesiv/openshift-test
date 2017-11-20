@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -195,13 +194,7 @@ func main() {
 	fmt.Println(ns.Annotations)
 
 	// execute cli command
-	or := scca{
-		Annotations: make(map[string]string),
-	}
-	or.Annotations["openshift.io/scc"] = sflag
-	orm, err := json.Marshal(or)
 	clArgs = append(clArgs, "--restart=Never")
-	// clArgs = append(clArgs, "--overrides="+string(orm))
 	clArgs = append(clArgs, "--namespace="+namespace)
 
 	os.Args = clArgs
@@ -226,12 +219,12 @@ func main() {
 	err = app.Run(s, kubeDeps)
 	checkErr(err)
 
-	os.Args = []string{"oc", "get", "pod", pod.GetName(), "--output=yaml"}
+	os.Args = []string{"oc", "get", "pod", pod.GetName(), "--namespace=" + namespace, "--output=yaml"}
 	if err := kcommand.Execute(); err != nil {
 		os.Exit(1)
 	}
 
-	fmt.Println(string(orm))
+	fmt.Println(pod)
 
 	/*
 		selector := labels.SelectorFromSet(dc.Spec.Selector)
