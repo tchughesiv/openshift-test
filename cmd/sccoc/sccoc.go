@@ -10,13 +10,10 @@ import (
 
 	configapi "github.com/openshift/origin/pkg/cmd/server/api"
 	bp "github.com/openshift/origin/pkg/cmd/server/bootstrappolicy"
-	"github.com/openshift/origin/pkg/cmd/server/kubernetes/node"
-	nodeoptions "github.com/openshift/origin/pkg/cmd/server/kubernetes/node/options"
 	cmdutil "github.com/openshift/origin/pkg/cmd/util"
 	"github.com/openshift/origin/pkg/cmd/util/serviceability"
 	"github.com/openshift/origin/pkg/oc/cli"
 	testserver "github.com/openshift/origin/test/util/server"
-	"k8s.io/kubernetes/cmd/kubelet/app"
 	"k8s.io/kubernetes/pkg/util/logs"
 
 	// install all APIs
@@ -40,18 +37,17 @@ import (
 
 func main() {
 	var sccopts []string
+	clArgs := os.Args
 	sflag := cmdutil.Env("OPENSHIFT_SCC", bp.SecurityContextConstraintRestricted)
 	os.Setenv("TEST_ETCD_DIR", "/tmp/etcdtest")
 
 	groups, users := bp.GetBoostrapSCCAccess(bp.DefaultOpenShiftInfraNamespace)
-	bootstrappedConstraints := bp.GetBootstrapSecurityContextConstraints(groups, users)
-	for _, v := range bootstrappedConstraints {
+	for _, v := range bp.GetBootstrapSecurityContextConstraints(groups, users) {
 		sccopts = append(sccopts, v.Name)
 	}
 
 	if !contains(sccopts, sflag) {
-		fmt.Printf("\n")
-		fmt.Printf("%#v is not a valid scc. Must choose one of these:\n", sflag)
+		fmt.Printf("\n%#v is not a valid scc. Must choose one of these:\n", sflag)
 		for _, opt := range sccopts {
 			fmt.Printf(" - %s\n", opt)
 		}
@@ -71,20 +67,19 @@ func main() {
 	}
 	// kconfig, err := testserver.StartConfiguredAllInOne(mconfig, nconfig, components)
 	kconfig, err := testserver.StartConfiguredMaster(mconfig)
+	os.Setenv("KUBECONFIG", kconfig)
 	if _, err := os.Stat(mpath); os.IsNotExist(err) {
 		os.Mkdir(mpath, 0755)
 	}
-	s, err := nodeoptions.Build(*nconfig)
-	checkErr(err)
-	nodeconfig, err := node.New(*nconfig, s)
-	checkErr(err)
-	kubeDeps := nodeconfig.KubeletDeps
-
+	/*
+		s, err := nodeoptions.Build(*nconfig)
+		checkErr(err)
+		nodeconfig, err := node.New(*nconfig, s)
+		checkErr(err)
+		kubeDeps := nodeconfig.KubeletDeps
+	*/
 	//oaclient, err := testutil.GetClusterAdminClient(kconfig)
 	//checkErr(err)
-
-	os.Setenv("KUBECONFIG", kconfig)
-	clArgs := os.Args
 
 	logs.InitLogs()
 	defer logs.FlushLogs()
@@ -126,11 +121,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	//s.RunOnce = true
-	//kubeDeps.NetworkPlugins = []network.NetworkPlugin{}
-	err = app.Run(s, kubeDeps)
-	checkErr(err)
-	fmt.Printf("%#v\n", kubeDeps.NetworkPlugins)
+	/*
+		s.RunOnce = true
+		err = app.Run(s, kubeDeps)
+		checkErr(err)
+	*/
+
+	// fmt.Printf("%#v\n", kubeDeps.NetworkPlugins)
 
 	/*
 		fmt.Printf("\n")
