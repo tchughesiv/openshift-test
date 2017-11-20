@@ -169,6 +169,8 @@ func main() {
 	checkErr(err)
 	pod, err := podint.Get(podl.Items[0].GetName(), metav1.GetOptions{})
 	checkErr(err)
+
+	// mirror pod mods
 	pod.Kind = "Pod"
 	pod.APIVersion = "v1"
 	pod.Spec.ServiceAccountName = ""
@@ -195,7 +197,7 @@ func main() {
 	}
 
 	fmt.Println(pod.GetObjectKind())
-	// fmt.Println(pod.Kind)
+	fmt.Println(string(pyaml))
 
 	/*
 		selector := labels.SelectorFromSet(dc.Spec.Selector)
