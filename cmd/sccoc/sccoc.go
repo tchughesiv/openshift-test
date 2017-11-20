@@ -48,7 +48,7 @@ import (
 
 func main() {
 	var sccopts []string
-	namespace := "tmp"
+	namespace := "default"
 	sflag := cmdutil.Env("OPENSHIFT_SCC", bp.SecurityContextConstraintRestricted)
 	os.Setenv("TEST_ETCD_DIR", testutil.GetBaseDir()+"/etcd")
 
@@ -124,10 +124,10 @@ func main() {
 	//_, err = f.OpenshiftInternalAppsClient()
 	//checkErr(err)
 
-	clusterAdminClientConfig, err := testutil.GetClusterAdminClientConfig(kconfig)
-	checkErr(err)
-	_, _, err = testserver.CreateNewProject(clusterAdminClientConfig, namespace, "tommy")
-	checkErr(err)
+	//clusterAdminClientConfig, err := testutil.GetClusterAdminClientConfig(kconfig)
+	//checkErr(err)
+	//_, _, err = testserver.CreateNewProject(clusterAdminClientConfig, namespace, "tommy")
+	//checkErr(err)
 
 	_, err = kclient.Core().ServiceAccounts(namespace).Get(bp.DefaultServiceAccountName, metav1.GetOptions{})
 	i := 0
