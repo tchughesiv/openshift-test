@@ -169,9 +169,12 @@ func main() {
 	checkErr(err)
 	pod, err := podint.Get(podl.Items[0].GetName(), metav1.GetOptions{})
 	checkErr(err)
+	pod.Kind = "Pod"
+	pod.APIVersion = "v1"
+	pod.Spec.ServiceAccountName = ""
 
 	podyf := mpath + "/" + pod.Name + "-pod.yaml"
-	//pyaml, err := yaml.JSONToYAML(pod.GetObjectMeta())
+	//pyaml, err := yaml.JSONToYAML(pod)
 	pyaml, err := latest.WriteYAML(pod)
 	checkErr(err)
 	ioutil.WriteFile(podyf, pyaml, os.FileMode(0600))
@@ -190,7 +193,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	// fmt.Println(pod)
+	fmt.Println(pod.GetObjectKind())
+	// fmt.Println(pod.Kind)
 
 	/*
 		selector := labels.SelectorFromSet(dc.Spec.Selector)
