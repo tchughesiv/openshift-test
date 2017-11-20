@@ -48,7 +48,7 @@ import (
 
 func main() {
 	var sccopts []string
-	namespace := "default"
+	namespace := "tmp"
 	sflag := cmdutil.Env("OPENSHIFT_SCC", bp.SecurityContextConstraintRestricted)
 	os.Setenv("TEST_ETCD_DIR", testutil.GetBaseDir()+"/etcd")
 
@@ -124,6 +124,11 @@ func main() {
 	_, err = f.OpenshiftInternalAppsClient()
 	checkErr(err)
 
+	clusterAdminClientConfig, err := testutil.GetClusterAdminClientConfig(kconfig)
+	checkErr(err)
+	_, _, err = testserver.CreateNewProject(clusterAdminClientConfig, namespace, "tommy")
+	checkErr(err)
+
 	_, err = kclient.Core().ServiceAccounts(namespace).Get(bp.DefaultServiceAccountName, metav1.GetOptions{})
 	i := 0
 	for err != nil {
@@ -143,17 +148,30 @@ func main() {
 
 	// modify scc settings accordingly
 	sa := "system:serviceaccount:" + namespace + ":" + bp.DefaultServiceAccountName
-	patch, err := json.Marshal(scc{Priority: 1})
-	checkErr(err)
-	fmt.Println(string(patch))
 
-	os.Args = []string{"oc", "patch", "scc", sflag, "--patch", string(patch)}
-	if err := command.Execute(); err != nil {
-		os.Exit(1)
+	/*
+		patch, err := json.Marshal(scc{Priority: 1})
+		checkErr(err)
+		fmt.Println(string(patch))
+
+		os.Args = []string{"oc", "patch", "scc", sflag, "--patch", string(patch)}
+		if err := command.Execute(); err != nil {
+			os.Exit(1)
+		}
+	*/
+
+	if sflag != bp.SecurityContextConstraintRestricted {
+		os.Args = []string{"oc", "adm", "policy", "add-scc-to-user", sflag, sa}
+		if err := command.Execute(); err != nil {
+			os.Exit(1)
+		}
 	}
-	os.Args = []string{"oc", "adm", "policy", "add-scc-to-user", sflag, sa}
-	if err := command.Execute(); err != nil {
-		os.Exit(1)
+
+	if sflag != bp.SecurityContextConstraintsAnyUID {
+		os.Args = []string{"oc", "adm", "policy", "remove-scc-from-user", bp.SecurityContextConstraintsAnyUID, sa}
+		if err := command.Execute(); err != nil {
+			os.Exit(1)
+		}
 	}
 
 	/*
@@ -183,8 +201,9 @@ func main() {
 	or.Annotations["openshift.io/scc"] = sflag
 	orm, err := json.Marshal(or)
 	clArgs = append(clArgs, "--restart=Never")
-	clArgs = append(clArgs, "--overrides="+string(orm))
+	// clArgs = append(clArgs, "--overrides="+string(orm))
 	clArgs = append(clArgs, "--namespace="+namespace)
+
 	os.Args = clArgs
 	if err := command.Execute(); err != nil {
 		os.Exit(1)
