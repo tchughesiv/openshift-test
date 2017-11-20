@@ -199,13 +199,4 @@ func main() {
 		pod, _, err := kcmdutil.GetFirstPod(kc.Core(), namespace, selector, time.Second*10, sortBy)
 		checkErr(err)
 	*/
-
-	/*
-		fmt.Printf("\n")
-		os.Args = []string{"oc", "get", "all", "--all-namespaces"}
-		if err := command.Execute(); err != nil {
-			os.Exit(1)
-		}
-	*/
-
 }
