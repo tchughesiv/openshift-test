@@ -172,6 +172,7 @@ func main() {
 	pod.Kind = "Pod"
 	pod.APIVersion = "v1"
 	pod.Spec.ServiceAccountName = ""
+	pod.ObjectMeta.ResourceVersion = ""
 
 	podyf := mpath + "/" + pod.Name + "-pod.yaml"
 	//pyaml, err := yaml.JSONToYAML(pod)
