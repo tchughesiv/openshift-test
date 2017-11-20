@@ -11,6 +11,8 @@ import (
 
 	configapi "github.com/openshift/origin/pkg/cmd/server/api"
 	bp "github.com/openshift/origin/pkg/cmd/server/bootstrappolicy"
+	"github.com/openshift/origin/pkg/cmd/server/kubernetes/node"
+	nodeoptions "github.com/openshift/origin/pkg/cmd/server/kubernetes/node/options"
 	cmdutil "github.com/openshift/origin/pkg/cmd/util"
 	"github.com/openshift/origin/pkg/cmd/util/clientcmd"
 	"github.com/openshift/origin/pkg/cmd/util/serviceability"
@@ -21,6 +23,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	kclientcmd "k8s.io/client-go/tools/clientcmd"
+	"k8s.io/kubernetes/cmd/kubelet/app"
 	"k8s.io/kubernetes/pkg/api/v1"
 	"k8s.io/kubernetes/pkg/controller"
 	kcmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
@@ -55,7 +58,6 @@ func main() {
 		fmt.Printf("\nError: unknown command %#v for %#v... must use \"run\"\n", os.Args[1], os.Args[0])
 		os.Exit(1)
 	}
-	//app := os.Args[2]
 	clArgs := os.Args
 	groups, users := bp.GetBoostrapSCCAccess(bp.DefaultOpenShiftInfraNamespace)
 	for _, v := range bp.GetBootstrapSecurityContextConstraints(groups, users) {
@@ -86,13 +88,12 @@ func main() {
 	if _, err := os.Stat(mpath); os.IsNotExist(err) {
 		os.Mkdir(mpath, 0755)
 	}
-	/*
-		s, err := nodeoptions.Build(*nconfig)
-		checkErr(err)
-		nodeconfig, err := node.New(*nconfig, s)
-		checkErr(err)
-		kubeDeps := nodeconfig.KubeletDeps
-	*/
+	s, err := nodeoptions.Build(*nconfig)
+	checkErr(err)
+	nodeconfig, err := node.New(*nconfig, s)
+	checkErr(err)
+	kubeDeps := nodeconfig.KubeletDeps
+
 	logs.InitLogs()
 	defer logs.FlushLogs()
 	defer serviceability.BehaviorOnPanic(os.Getenv("OPENSHIFT_ON_PANIC"))()
@@ -145,19 +146,19 @@ func main() {
 	checkErr(err)
 	dc, err := appsClient.Apps().DeploymentConfigs(namespace).Get(dcl.Items[0].GetName(), metav1.GetOptions{})
 	checkErr(err)
+
+	s.RunOnce = true
+	err = app.Run(s, kubeDeps)
+	checkErr(err)
+
 	selector := labels.SelectorFromSet(dc.Spec.Selector)
 	//sortBy := func(pods []*v1.Pod) sort.Interface { return controller.ByLogging(pods) }
 	sortBy := func(pods []*v1.Pod) sort.Interface { return sort.Reverse(controller.ActivePods(pods)) }
-	pod, _, err := kcmdutil.GetFirstPod(kc.Core(), namespace, selector, time.Second*25, sortBy)
+	pod, _, err := kcmdutil.GetFirstPod(kc.Core(), namespace, selector, time.Second*10, sortBy)
 	checkErr(err)
 
+	fmt.Println(dc)
 	fmt.Println(pod)
-
-	/*
-		s.RunOnce = true
-		err = app.Run(s, kubeDeps)
-		checkErr(err)
-	*/
 
 	/*
 		fmt.Printf("\n")
