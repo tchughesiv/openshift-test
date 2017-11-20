@@ -57,8 +57,6 @@ func main() {
 		os.Exit(1)
 	}
 	clArgs := os.Args
-	clArgs = append(clArgs, "--restart=Never")
-	clArgs = append(clArgs, "-n"+namespace)
 	groups, users := bp.GetBoostrapSCCAccess(bp.DefaultOpenShiftInfraNamespace)
 	for _, v := range bp.GetBootstrapSecurityContextConstraints(groups, users) {
 		sccopts = append(sccopts, v.Name)
@@ -179,6 +177,14 @@ func main() {
 	fmt.Println(ns.Annotations)
 
 	// execute cli command
+	or := scca{
+		Annotations: make(map[string]string),
+	}
+	or.Annotations["openshift.io/scc"] = sflag
+	orm, err := json.Marshal(or)
+	clArgs = append(clArgs, "--restart=Never")
+	clArgs = append(clArgs, "--overrides="+string(orm))
+	clArgs = append(clArgs, "--namespace="+namespace)
 	os.Args = clArgs
 	if err := command.Execute(); err != nil {
 		os.Exit(1)
@@ -206,7 +212,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	// fmt.Println(string(pyaml))
+	fmt.Println(string(orm))
 
 	/*
 		selector := labels.SelectorFromSet(dc.Spec.Selector)
@@ -243,4 +249,8 @@ func contains(sccopts []string, sflag string) bool {
 
 type scc struct {
 	Priority int `json:"priority"`
+}
+
+type scca struct {
+	Annotations map[string]string `json:"annotations,omitempty" protobuf:"bytes,12,rep,name=annotations"`
 }
