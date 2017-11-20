@@ -150,7 +150,6 @@ func main() {
 	sa := "system:serviceaccount:" + namespace + ":" + bp.DefaultServiceAccountName
 	patch, err := json.Marshal(scc{Priority: 1})
 	checkErr(err)
-
 	os.Args = []string{"oc", "patch", "scc", sflag, "--patch", string(patch)}
 	if err := command.Execute(); err != nil {
 		os.Exit(1)
@@ -175,24 +174,10 @@ func main() {
 	}
 
 	/*
-		for _, a := range sccopts {
-			if a == sflag {
-				os.Args = []string{"oc", "adm", "policy", "add-scc-to-user", a, sa}
-				if err := command.Execute(); err != nil {
-					os.Exit(1)
-				}
-			} else {
-				os.Args = []string{"oc", "adm", "policy", "remove-scc-from-user", a, sa}
-				if err := command.Execute(); err != nil {
-					os.Exit(1)
-				}
-			}
-		}
+		ns, err := kclient.Core().Namespaces().Get(namespace, metav1.GetOptions{})
+		checkErr(err)
+		fmt.Println(ns.Annotations)
 	*/
-
-	ns, err := kclient.Core().Namespaces().Get(namespace, metav1.GetOptions{})
-	checkErr(err)
-	fmt.Println(ns.Annotations)
 
 	// execute cli command
 	clArgs = append(clArgs, "--restart=Never")
@@ -225,7 +210,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Println(pod)
+	// fmt.Println(pod)
 
 	/*
 		selector := labels.SelectorFromSet(dc.Spec.Selector)
@@ -262,8 +247,4 @@ func contains(sccopts []string, sflag string) bool {
 
 type scc struct {
 	Priority int `json:"priority"`
-}
-
-type scca struct {
-	Annotations map[string]string `json:"annotations,omitempty" protobuf:"bytes,12,rep,name=annotations"`
 }
