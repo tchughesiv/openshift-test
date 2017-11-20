@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"log"
 	"math/rand"
 	"os"
@@ -9,6 +10,7 @@ import (
 	"time"
 
 	configapi "github.com/openshift/origin/pkg/cmd/server/api"
+	"github.com/openshift/origin/pkg/cmd/server/api/latest"
 	bp "github.com/openshift/origin/pkg/cmd/server/bootstrappolicy"
 	"github.com/openshift/origin/pkg/cmd/server/kubernetes/node"
 	nodeoptions "github.com/openshift/origin/pkg/cmd/server/kubernetes/node/options"
@@ -101,7 +103,7 @@ func main() {
 		runtime.GOMAXPROCS(runtime.NumCPU())
 	}
 	command := cli.CommandFor("oc")
-	// kcommand := cli.CommandFor("kubectl")
+	kcommand := cli.CommandFor("kubectl")
 
 	os.Args = []string{"oc", "new-project", namespace}
 	if err := command.Execute(); err != nil {
@@ -125,7 +127,7 @@ func main() {
 	_, err = kclient.Core().ServiceAccounts(namespace).Get(bp.DefaultServiceAccountName, metav1.GetOptions{})
 	i := 0
 	for err != nil {
-		fmt.Printf("\n%#v\n", i)
+		//fmt.Printf("\n%#v\n", i)
 		if i < 5 {
 			time.Sleep(time.Second * 3)
 			_, err = kclient.Core().ServiceAccounts(namespace).Get(bp.DefaultServiceAccountName, metav1.GetOptions{})
@@ -171,11 +173,21 @@ func main() {
 	checkErr(err)
 	pod, err := podint.Get(podl.Items[0].GetName(), metav1.GetOptions{})
 	checkErr(err)
-	fmt.Println(pod.Spec)
+
+	pyaml, err := latest.WriteYAML(pod)
+	checkErr(err)
+	podyf := mpath + "/" + pod.Name
+	ioutil.WriteFile(podyf, []byte(pyaml), os.FileMode(0600))
+	fmt.Println(podyf)
 
 	s.RunOnce = true
 	err = app.Run(s, kubeDeps)
 	checkErr(err)
+
+	os.Args = []string{"oc", "get", "pod", pod.Name}
+	if err := kcommand.Execute(); err != nil {
+		os.Exit(1)
+	}
 
 	/*
 		selector := labels.SelectorFromSet(dc.Spec.Selector)
