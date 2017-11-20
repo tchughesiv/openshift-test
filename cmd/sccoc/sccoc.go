@@ -23,9 +23,9 @@ import (
 	testutil "github.com/openshift/origin/test/util"
 	testserver "github.com/openshift/origin/test/util/server"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apiserver/pkg/util/logs"
 	kclientcmd "k8s.io/client-go/tools/clientcmd"
 	"k8s.io/kubernetes/cmd/kubelet/app"
-	"k8s.io/kubernetes/pkg/util/logs"
 
 	// install all APIs
 	_ "github.com/openshift/origin/pkg/api/install"
@@ -92,6 +92,27 @@ func main() {
 	checkErr(err)
 	kubeDeps := nodeconfig.KubeletDeps
 
+	cfg, err := config.NewOpenShiftClientConfigLoadingRules().Load()
+	checkErr(err)
+	defaultCfg := kclientcmd.NewDefaultClientConfig(*cfg, &kclientcmd.ConfigOverrides{})
+	f := clientcmd.NewFactory(defaultCfg)
+	kclient, err := f.ClientSet()
+	checkErr(err)
+	//_, err = f.OpenshiftInternalAppsClient()
+	//checkErr(err)
+
+	// wait for default serviceaccount to exist
+	_, err = kclient.Core().ServiceAccounts(namespace).Get(bp.DefaultServiceAccountName, metav1.GetOptions{})
+	i := 0
+	for err != nil {
+		//fmt.Printf("\n%#v\n", i)
+		if i < 5 {
+			time.Sleep(time.Second * 3)
+			_, err = kclient.Core().ServiceAccounts(namespace).Get(bp.DefaultServiceAccountName, metav1.GetOptions{})
+		}
+		i++
+	}
+
 	logs.InitLogs()
 	defer logs.FlushLogs()
 	defer serviceability.BehaviorOnPanic(os.Getenv("OPENSHIFT_ON_PANIC"))()
@@ -103,31 +124,6 @@ func main() {
 	}
 	command := cli.CommandFor("oc")
 	kcommand := cli.CommandFor("kubectl")
-
-	// Run kubelet
-	// requires higher max user watches for file method...
-	// sudo sysctl fs.inotify.max_user_watches=524288
-	// ?? make the change permanent, edit the file /etc/sysctl.conf and add the line to the end of the file
-
-	cfg, err := config.NewOpenShiftClientConfigLoadingRules().Load()
-	checkErr(err)
-	defaultCfg := kclientcmd.NewDefaultClientConfig(*cfg, &kclientcmd.ConfigOverrides{})
-	f := clientcmd.NewFactory(defaultCfg)
-	kclient, err := f.ClientSet()
-	checkErr(err)
-	//_, err = f.OpenshiftInternalAppsClient()
-	//checkErr(err)
-
-	_, err = kclient.Core().ServiceAccounts(namespace).Get(bp.DefaultServiceAccountName, metav1.GetOptions{})
-	i := 0
-	for err != nil {
-		//fmt.Printf("\n%#v\n", i)
-		if i < 5 {
-			time.Sleep(time.Second * 3)
-			_, err = kclient.Core().ServiceAccounts(namespace).Get(bp.DefaultServiceAccountName, metav1.GetOptions{})
-		}
-		i++
-	}
 
 	// modify scc settings accordingly
 	sa := "system:serviceaccount:" + namespace + ":" + bp.DefaultServiceAccountName
@@ -180,6 +176,10 @@ func main() {
 	checkErr(err)
 	ioutil.WriteFile(podyf, pyaml, os.FileMode(0600))
 
+	// Run kubelet
+	// requires higher max user watches for file method...
+	// sudo sysctl fs.inotify.max_user_watches=524288
+	// ?? make the change permanent, edit the file /etc/sysctl.conf and add the line to the end of the file
 	// remove serviceaccount, secrets, resourceVersion from pod yaml before processing as mirror pod
 	s.RunOnce = true
 	err = app.Run(s, kubeDeps)
@@ -223,8 +223,4 @@ func contains(sccopts []string, sflag string) bool {
 		}
 	}
 	return false
-}
-
-type scc struct {
-	Priority int `json:"priority"`
 }
