@@ -121,8 +121,8 @@ func main() {
 	f := clientcmd.NewFactory(defaultCfg)
 	kclient, err := f.ClientSet()
 	checkErr(err)
-	_, err = f.OpenshiftInternalAppsClient()
-	checkErr(err)
+	//_, err = f.OpenshiftInternalAppsClient()
+	//checkErr(err)
 
 	clusterAdminClientConfig, err := testutil.GetClusterAdminClientConfig(kconfig)
 	checkErr(err)
@@ -195,7 +195,7 @@ func main() {
 	pod, err := podint.Get(podl.Items[0].GetName(), metav1.GetOptions{})
 	checkErr(err)
 
-	podyf := mpath + "/" + pod.Name + ".yaml"
+	podyf := mpath + "/" + pod.Name + "-pod.yaml"
 	//pyaml, err := yaml.JSONToYAML(pod.GetObjectMeta())
 	pyaml, err := latest.WriteYAML(pod)
 	checkErr(err)
