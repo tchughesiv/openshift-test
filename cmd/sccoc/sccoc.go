@@ -176,7 +176,7 @@ func main() {
 
 	pyaml, err := latest.WriteYAML(pod)
 	checkErr(err)
-	podyf := mpath + "/" + pod.Name
+	podyf := mpath + "/" + pod.Name + ".yaml"
 	ioutil.WriteFile(podyf, []byte(pyaml), os.FileMode(0600))
 	fmt.Println(podyf)
 
