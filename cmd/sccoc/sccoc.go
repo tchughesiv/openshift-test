@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"os"
 	"runtime"
+	"sort"
 	"time"
 
 	configapi "github.com/openshift/origin/pkg/cmd/server/api"
@@ -18,7 +19,11 @@ import (
 	testutil "github.com/openshift/origin/test/util"
 	testserver "github.com/openshift/origin/test/util/server"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	kclientcmd "k8s.io/client-go/tools/clientcmd"
+	"k8s.io/kubernetes/pkg/api/v1"
+	"k8s.io/kubernetes/pkg/controller"
+	kcmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
 	"k8s.io/kubernetes/pkg/util/logs"
 
 	// install all APIs
@@ -42,6 +47,7 @@ import (
 
 func main() {
 	var sccopts []string
+	namespace := "default"
 	sflag := cmdutil.Env("OPENSHIFT_SCC", bp.SecurityContextConstraintRestricted)
 	os.Setenv("TEST_ETCD_DIR", testutil.GetBaseDir()+"/etcd")
 
@@ -126,28 +132,26 @@ func main() {
 	if err := command.Execute(); err != nil {
 		os.Exit(1)
 	}
-
 	cfg, err := config.NewOpenShiftClientConfigLoadingRules().Load()
 	checkErr(err)
 	defaultCfg := kclientcmd.NewDefaultClientConfig(*cfg, &kclientcmd.ConfigOverrides{})
 	f := clientcmd.NewFactory(defaultCfg)
-	clientset, err := f.ClientSet()
+	kc, err := f.ClientSet()
 	checkErr(err)
-	aoapp, err := f.OpenshiftInternalAppsClient()
+	appsClient, err := f.OpenshiftInternalAppsClient()
 	checkErr(err)
 
-	//n, err := clientset.Core().Namespaces().Get("default", metav1.GetOptions{})
-	//checkErr(err)
-	dc, err := aoapp.Apps().DeploymentConfigs("default").List(metav1.ListOptions{})
+	dcl, err := appsClient.Apps().DeploymentConfigs(namespace).List(metav1.ListOptions{})
 	checkErr(err)
-	fmt.Println(dc.Items[0].GetName())
-	pod, err := f.PodForResource(dc.Items[0].GetName(), time.Second*10)
+	dc, err := appsClient.Apps().DeploymentConfigs(namespace).Get(dcl.Items[0].GetName(), metav1.GetOptions{})
 	checkErr(err)
+	selector := labels.SelectorFromSet(dc.Spec.Selector)
+	//sortBy := func(pods []*v1.Pod) sort.Interface { return controller.ByLogging(pods) }
+	sortBy := func(pods []*v1.Pod) sort.Interface { return sort.Reverse(controller.ActivePods(pods)) }
+	pod, _, err := kcmdutil.GetFirstPod(kc.Core(), namespace, selector, time.Second*25, sortBy)
+	checkErr(err)
+
 	fmt.Println(pod)
-	pint := clientset.Core().Pods("default")
-	plist, err := pint.List(metav1.ListOptions{})
-	checkErr(err)
-	fmt.Println(plist.Items)
 
 	/*
 		s.RunOnce = true
