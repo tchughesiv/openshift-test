@@ -104,12 +104,6 @@ func main() {
 	command := cli.CommandFor("oc")
 	kcommand := cli.CommandFor("kubectl")
 
-	/*
-		os.Args = []string{"oc", "new-project", namespace}
-		if err := command.Execute(); err != nil {
-			os.Exit(1)
-		}
-	*/
 	// Run kubelet
 	// requires higher max user watches for file method...
 	// sudo sysctl fs.inotify.max_user_watches=524288
@@ -124,11 +118,6 @@ func main() {
 	//_, err = f.OpenshiftInternalAppsClient()
 	//checkErr(err)
 
-	//clusterAdminClientConfig, err := testutil.GetClusterAdminClientConfig(kconfig)
-	//checkErr(err)
-	//_, _, err = testserver.CreateNewProject(clusterAdminClientConfig, namespace, "tommy")
-	//checkErr(err)
-
 	_, err = kclient.Core().ServiceAccounts(namespace).Get(bp.DefaultServiceAccountName, metav1.GetOptions{})
 	i := 0
 	for err != nil {
@@ -139,12 +128,6 @@ func main() {
 		}
 		i++
 	}
-
-	/*
-		sas, err := kclient.Core().ServiceAccounts(namespace).List(metav1.ListOptions{})
-		checkErr(err)
-		fmt.Println(sas.Items)
-	*/
 
 	// modify scc settings accordingly
 	sa := "system:serviceaccount:" + namespace + ":" + bp.DefaultServiceAccountName
@@ -160,10 +143,6 @@ func main() {
 		if err := command.Execute(); err != nil {
 			os.Exit(1)
 		}
-		//os.Args = []string{"oc", "adm", "policy", "remove-scc-from-user", bp.SecurityContextConstraintRestricted, sa}
-		//if err := command.Execute(); err != nil {
-		//	os.Exit(1)
-		//}
 	}
 
 	if sflag != bp.SecurityContextConstraintsAnyUID {
@@ -201,6 +180,7 @@ func main() {
 	checkErr(err)
 	ioutil.WriteFile(podyf, pyaml, os.FileMode(0600))
 
+	// remove serviceaccount, secrets, resourceVersion from pod yaml before processing as mirror pod
 	s.RunOnce = true
 	err = app.Run(s, kubeDeps)
 	checkErr(err)
