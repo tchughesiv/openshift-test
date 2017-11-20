@@ -9,8 +9,8 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/ghodss/yaml"
 	configapi "github.com/openshift/origin/pkg/cmd/server/api"
+	"github.com/openshift/origin/pkg/cmd/server/api/latest"
 	bp "github.com/openshift/origin/pkg/cmd/server/bootstrappolicy"
 	"github.com/openshift/origin/pkg/cmd/server/kubernetes/node"
 	nodeoptions "github.com/openshift/origin/pkg/cmd/server/kubernetes/node/options"
@@ -175,9 +175,10 @@ func main() {
 	checkErr(err)
 
 	podyf := mpath + "/" + pod.Name + ".yaml"
-	pyaml, err := yaml.JSONToYAML(pod)
+	//pyaml, err := yaml.JSONToYAML(pod.GetObjectMeta())
+	pyaml, err := latest.WriteYAML(pod)
 	checkErr(err)
-	ioutil.WriteFile(podyf, []byte(pyaml), os.FileMode(0600))
+	ioutil.WriteFile(podyf, pyaml, os.FileMode(0600))
 
 	s.RunOnce = true
 	err = app.Run(s, kubeDeps)
@@ -188,7 +189,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Println(podyf)
+	fmt.Println(pyaml)
 
 	/*
 		selector := labels.SelectorFromSet(dc.Spec.Selector)
