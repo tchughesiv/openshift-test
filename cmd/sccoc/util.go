@@ -27,6 +27,12 @@ func contains(sccopts []string, sflag string) bool {
 	return false
 }
 
+func mkDir(dir string) {
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		os.Mkdir(dir, 0755)
+	}
+}
+
 func sccMod(sflag string, namespace string, securityClient securityclientinternal.Interface, ch chan<- bool) {
 	if sflag != bp.SecurityContextConstraintRestricted && sflag != bp.SecurityContextConstraintsAnyUID {
 		sa := "system:serviceaccount:" + namespace + ":" + bp.DefaultServiceAccountName

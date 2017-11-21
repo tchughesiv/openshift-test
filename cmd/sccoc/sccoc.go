@@ -2,13 +2,13 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"time"
 
 	"github.com/ghodss/yaml"
-	"github.com/golang/glog"
 	configapi "github.com/openshift/origin/pkg/cmd/server/api"
 	bp "github.com/openshift/origin/pkg/cmd/server/bootstrappolicy"
 	"github.com/openshift/origin/pkg/cmd/server/kubernetes/node"
@@ -42,11 +42,20 @@ import (
 // 2. execute "run" against to generate pod yaml w/ scc
 // 3. export yaml w/ sc settings to pod manifest dir
 // 4. start real kubelet pointed to manifest dir - should deploy pod
+var (
+	clArgs = os.Args
+	d      = testutil.GetBaseDir() + "/log"
+	n      = time.Now()
+)
+
+func init() {
+	os.Setenv("GLOG_LEVEL", "0")
+	os.Args = []string{"glog", "-stderrthreshold=ERROR", "-logtostderr=false", "-log_dir=" + d, "-v=" + os.Getenv("GLOG_LEVEL")}
+	flag.Parse()
+}
 
 func main() {
-	n := time.Now()
-	var gl glog.Level
-	checkErr(gl.Set(cmdutil.Env("GLOG_LEVEL", "0")))
+	os.Args = clArgs
 	var sccopts []string
 	sflag := cmdutil.Env("OPENSHIFT_SCC", bp.SecurityContextConstraintRestricted)
 	os.Setenv("TEST_ETCD_DIR", testutil.GetBaseDir()+"/etcd")
@@ -73,6 +82,8 @@ func main() {
 	//os.Setenv("KUBELET_NETWORK_ARGS", "")
 	mconfig, nconfig, _, err := testserver.DefaultAllInOneOptions()
 	checkErr(err)
+
+	mkDir(d)
 	os.Setenv("KUBECONFIG", testutil.KubeConfigPath())
 	mpath := testutil.GetBaseDir() + "/manifests"
 	nconfig.PodManifestConfig = &configapi.PodManifestConfig{
@@ -82,9 +93,7 @@ func main() {
 	_, err = testserver.StartConfiguredMaster(mconfig)
 	checkErr(err)
 
-	if _, err := os.Stat(mpath); os.IsNotExist(err) {
-		os.Mkdir(mpath, 0755)
-	}
+	mkDir(mpath)
 	s, err := nodeoptions.Build(*nconfig)
 	checkErr(err)
 	nodeconfig, err := node.New(*nconfig, s)
