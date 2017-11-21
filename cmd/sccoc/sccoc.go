@@ -131,7 +131,7 @@ func main() {
 
 	// modify scc settings accordingly
 	sa := "system:serviceaccount:" + namespace + ":" + bp.DefaultServiceAccountName
-	if sflag != bp.SecurityContextConstraintRestricted && sflag != bp.SecurityContextConstraintsAnyUID {
+	if sflag != bp.SecurityContextConstraintRestricted {
 		patch, err := json.Marshal(scc{Priority: 1})
 		checkErr(err)
 		os.Args = []string{"oc", "patch", "scc", sflag, "--patch", string(patch)}
@@ -150,6 +150,8 @@ func main() {
 			os.Exit(1)
 		}
 	}
+
+	t3 := time.Since(t)
 
 	// execute cli command
 	clArgs = append(clArgs, "--restart=Never")
@@ -190,8 +192,9 @@ func main() {
 
 	fmt.Println(string(jpod))
 
-	fmt.Println("time from post master to end")
+	fmt.Println("time from post master, post scc, to end")
 	fmt.Println(t2)
+	fmt.Println(t3)
 	fmt.Println(time.Since(t))
 
 	/*
