@@ -27,7 +27,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	kclientcmd "k8s.io/client-go/tools/clientcmd"
 	"k8s.io/kubernetes/cmd/kubelet/app"
-	kcmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
 	"k8s.io/kubernetes/pkg/util/logs"
 
 	// install all APIs
@@ -138,35 +137,34 @@ func main() {
 	securityClient, err := f.OpenshiftInternalSecurityClient()
 	checkErr(err)
 	sa := "system:serviceaccount:" + namespace + ":" + bp.DefaultServiceAccountName
-	if sflag != bp.SecurityContextConstraintRestricted {
+	if sflag != bp.SecurityContextConstraintRestricted && sflag != bp.SecurityContextConstraintsAnyUID {
 		patch, err := json.Marshal(scc{Priority: 1})
 		checkErr(err)
 		_, err = securityClient.Security().SecurityContextConstraints().Patch(sflag, types.StrategicMergePatchType, patch, "")
 		checkErr(err)
-		os.Args = []string{"oc", "adm", "policy", "add-scc-to-user", sflag, sa}
-		if err := command.Execute(); err != nil {
-			os.Exit(1)
-		}
+
+		o := &policy.SCCModificationOptions{}
+		o.Out = out
+		o.SCCName = sflag
+		o.Subjects = authorizationapi.BuildSubjects([]string{sa}, []string{})
+		o.SCCInterface = securityClient.Security().SecurityContextConstraints()
+		o.DefaultSubjectNamespace = namespace
+		checkErr(err)
+		err = o.AddSCC()
+		checkErr(err)
 	}
 
 	if sflag != bp.SecurityContextConstraintsAnyUID {
 		o := &policy.SCCModificationOptions{}
 		o.Out = out
-		// mapper, _ := f.Object()
 		o.IsGroup = true
-		o.SCCName = "anyuid"
+		o.SCCName = bp.SecurityContextConstraintsAnyUID
 		o.Subjects = authorizationapi.BuildSubjects([]string{}, []string{"system:cluster-admins"})
 		o.SCCInterface = securityClient.Security().SecurityContextConstraints()
-		o.DefaultSubjectNamespace, _, err = f.DefaultNamespace()
+		o.DefaultSubjectNamespace = namespace
 		checkErr(err)
-		if err := o.RemoveSCC(); err != nil {
-			kcmdutil.CheckErr(err)
-		}
-
-		//os.Args = []string{"oc", "adm", "policy", "remove-scc-from-group", bp.SecurityContextConstraintsAnyUID, "system:cluster-admins"}
-		//if err := command.Execute(); err != nil {
-		//	os.Exit(1)
-		//}
+		err = o.RemoveSCC()
+		checkErr(err)
 	}
 
 	t3 := time.Since(t)
