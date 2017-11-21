@@ -46,7 +46,7 @@ import (
 func main() {
 	n := time.Now()
 	var gl glog.Level
-	checkErr(gl.Set("1"))
+	checkErr(gl.Set(cmdutil.Env("GLOG_LEVEL", "0")))
 	var sccopts []string
 	sflag := cmdutil.Env("OPENSHIFT_SCC", bp.SecurityContextConstraintRestricted)
 	os.Setenv("TEST_ETCD_DIR", testutil.GetBaseDir()+"/etcd")
