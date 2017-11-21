@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"os"
 
@@ -28,7 +27,7 @@ func contains(sccopts []string, sflag string) bool {
 	return false
 }
 
-func sccmod(sflag string, namespace string, securityClient securityclientinternal.Interface, ch chan<- string) {
+func sccmod(sflag string, namespace string, securityClient securityclientinternal.Interface, ch chan<- bool) {
 	if sflag != bp.SecurityContextConstraintRestricted && sflag != bp.SecurityContextConstraintsAnyUID {
 		sa := "system:serviceaccount:" + namespace + ":" + bp.DefaultServiceAccountName
 		patch, err := json.Marshal(scc{Priority: 1})
@@ -45,10 +44,10 @@ func sccmod(sflag string, namespace string, securityClient securityclientinterna
 		err = o.AddSCC()
 		checkErr(err)
 	}
-	ch <- fmt.Sprintln()
+	ch <- true
 }
 
-func sccrm(sflag string, namespace string, securityClient securityclientinternal.Interface, ch chan<- string) {
+func sccrm(sflag string, namespace string, securityClient securityclientinternal.Interface, ch chan<- bool) {
 	if sflag != bp.SecurityContextConstraintsAnyUID {
 		o := &policy.SCCModificationOptions{}
 		o.Out = os.Stdout
@@ -60,5 +59,5 @@ func sccrm(sflag string, namespace string, securityClient securityclientinternal
 		err := o.RemoveSCC()
 		checkErr(err)
 	}
-	ch <- fmt.Sprintln()
+	ch <- true
 }

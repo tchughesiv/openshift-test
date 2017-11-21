@@ -132,7 +132,7 @@ func main() {
 	// modify scc settings accordingly
 	securityClient, err := f.OpenshiftInternalSecurityClient()
 	checkErr(err)
-	ch := make(chan string)
+	ch := make(chan bool)
 	go sccmod(sflag, namespace, securityClient, ch)
 	go sccrm(sflag, namespace, securityClient, ch)
 	t3 := time.Since(t)
