@@ -58,6 +58,7 @@ func main() {
 	os.Args = clArgs
 	var sccopts []string
 	sflag := cmdutil.Env("OPENSHIFT_SCC", bp.SecurityContextConstraintRestricted)
+	os.Setenv("KUBECONFIG", testutil.KubeConfigPath())
 	os.Setenv("TEST_ETCD_DIR", testutil.GetBaseDir()+"/etcd")
 
 	if os.Args[1] != "run" {
@@ -84,7 +85,6 @@ func main() {
 	checkErr(err)
 
 	mkDir(d)
-	os.Setenv("KUBECONFIG", testutil.KubeConfigPath())
 	mpath := testutil.GetBaseDir() + "/manifests"
 	nconfig.PodManifestConfig = &configapi.PodManifestConfig{
 		Path: mpath,
@@ -92,8 +92,8 @@ func main() {
 	}
 	_, err = testserver.StartConfiguredMaster(mconfig)
 	checkErr(err)
-
 	mkDir(mpath)
+
 	s, err := nodeoptions.Build(*nconfig)
 	checkErr(err)
 	nodeconfig, err := node.New(*nconfig, s)
@@ -176,9 +176,9 @@ func main() {
 
 	fmt.Println(string(jpod))
 
-	fmt.Println("\ntime from post master ready...")
+	fmt.Println("\ntime until master ready...")
 	fmt.Println(n2)
-	fmt.Println("\nTotal")
+	fmt.Println("\nTotal time.")
 	fmt.Println(time.Since(n))
 
 	/*
