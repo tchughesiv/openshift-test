@@ -111,7 +111,6 @@ func main() {
 		}
 		i++
 	}
-
 	//in, out, errout := os.Stdin, os.Stdout, os.Stderr
 
 	// modify scc settings accordingly
@@ -174,6 +173,7 @@ func main() {
 
 	fmt.Println(string(jpod))
 
+	fmt.Println("")
 	fmt.Println("time from post master, post scc, to end")
 	fmt.Println(t2)
 	fmt.Println(t3)
