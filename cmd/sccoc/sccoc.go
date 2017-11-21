@@ -4,9 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"math/rand"
 	"os"
-	"runtime"
 	"time"
 
 	"github.com/ghodss/yaml"
@@ -16,7 +14,6 @@ import (
 	nodeoptions "github.com/openshift/origin/pkg/cmd/server/kubernetes/node/options"
 	cmdutil "github.com/openshift/origin/pkg/cmd/util"
 	"github.com/openshift/origin/pkg/cmd/util/clientcmd"
-	"github.com/openshift/origin/pkg/cmd/util/serviceability"
 	"github.com/openshift/origin/pkg/oc/cli"
 	"github.com/openshift/origin/pkg/oc/cli/config"
 	testutil "github.com/openshift/origin/test/util"
@@ -24,7 +21,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kclientcmd "k8s.io/client-go/tools/clientcmd"
 	"k8s.io/kubernetes/cmd/kubelet/app"
-	"k8s.io/kubernetes/pkg/util/logs"
 
 	// install all APIs
 	_ "github.com/openshift/origin/pkg/api/install"
@@ -56,7 +52,7 @@ func main() {
 		fmt.Printf("\nError: unknown command %#v for %#v... must use \"run\"\n", os.Args[1], os.Args[0])
 		os.Exit(1)
 	}
-	clArgs := os.Args
+	// clArgs := os.Args
 	groups, users := bp.GetBoostrapSCCAccess(bp.DefaultOpenShiftInfraNamespace)
 	for _, v := range bp.GetBootstrapSecurityContextConstraints(groups, users) {
 		sccopts = append(sccopts, v.Name)
@@ -116,18 +112,7 @@ func main() {
 		i++
 	}
 
-	logs.InitLogs()
-	defer logs.FlushLogs()
-	defer serviceability.BehaviorOnPanic(os.Getenv("OPENSHIFT_ON_PANIC"))()
-	defer serviceability.Profile(os.Getenv("OPENSHIFT_PROFILE")).Stop()
-
-	rand.Seed(time.Now().UTC().UnixNano())
-	if len(os.Getenv("GOMAXPROCS")) == 0 {
-		runtime.GOMAXPROCS(runtime.NumCPU())
-	}
 	//in, out, errout := os.Stdin, os.Stdout, os.Stderr
-	command := cli.CommandFor("oc")
-	// kcommand := cli.CommandFor("kubectl")
 
 	// modify scc settings accordingly
 	securityClient, err := f.OpenshiftInternalSecurityClient()
@@ -138,9 +123,22 @@ func main() {
 	t3 := time.Since(t)
 
 	// execute cli command
-	clArgs = append(clArgs, "--restart=Never")
-	clArgs = append(clArgs, "--namespace="+namespace)
-	os.Args = clArgs
+	/*
+		logs.InitLogs()
+		defer logs.FlushLogs()
+		defer serviceability.BehaviorOnPanic(os.Getenv("OPENSHIFT_ON_PANIC"))()
+		defer serviceability.Profile(os.Getenv("OPENSHIFT_PROFILE")).Stop()
+
+		rand.Seed(time.Now().UTC().UnixNano())
+		if len(os.Getenv("GOMAXPROCS")) == 0 {
+			runtime.GOMAXPROCS(runtime.NumCPU())
+		}
+	*/
+	// kcommand := cli.CommandFor("kubectl")
+	command := cli.CommandFor("oc")
+	os.Args = append(os.Args, "--restart=Never")
+	os.Args = append(os.Args, "--namespace="+namespace)
+	// os.Args = clArgs
 	if err := command.Execute(); err != nil {
 		os.Exit(1)
 	}
