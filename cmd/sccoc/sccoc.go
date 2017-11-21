@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/ghodss/yaml"
+	authorizationapi "github.com/openshift/origin/pkg/authorization/apis/authorization"
 	configapi "github.com/openshift/origin/pkg/cmd/server/api"
 	bp "github.com/openshift/origin/pkg/cmd/server/bootstrappolicy"
 	"github.com/openshift/origin/pkg/cmd/server/kubernetes/node"
@@ -17,13 +18,16 @@ import (
 	cmdutil "github.com/openshift/origin/pkg/cmd/util"
 	"github.com/openshift/origin/pkg/cmd/util/clientcmd"
 	"github.com/openshift/origin/pkg/cmd/util/serviceability"
+	"github.com/openshift/origin/pkg/oc/admin/policy"
 	"github.com/openshift/origin/pkg/oc/cli"
 	"github.com/openshift/origin/pkg/oc/cli/config"
 	testutil "github.com/openshift/origin/test/util"
 	testserver "github.com/openshift/origin/test/util/server"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	kclientcmd "k8s.io/client-go/tools/clientcmd"
 	"k8s.io/kubernetes/cmd/kubelet/app"
+	kcmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
 	"k8s.io/kubernetes/pkg/util/logs"
 
 	// install all APIs
@@ -49,7 +53,6 @@ import (
 func main() {
 	t := time.Now()
 	var sccopts []string
-	namespace := "default"
 	sflag := cmdutil.Env("OPENSHIFT_SCC", bp.SecurityContextConstraintRestricted)
 	os.Setenv("TEST_ETCD_DIR", testutil.GetBaseDir()+"/etcd")
 
@@ -100,10 +103,10 @@ func main() {
 	checkErr(err)
 	defaultCfg := kclientcmd.NewDefaultClientConfig(*cfg, &kclientcmd.ConfigOverrides{})
 	f := clientcmd.NewFactory(defaultCfg)
+	namespace, _, err := f.DefaultNamespace()
+	checkErr(err)
 	kclient, err := f.ClientSet()
 	checkErr(err)
-	//_, err = f.OpenshiftInternalAppsClient()
-	//checkErr(err)
 
 	// wait for default serviceaccount to exist
 	_, err = kclient.Core().ServiceAccounts(namespace).Get(bp.DefaultServiceAccountName, metav1.GetOptions{})
@@ -126,18 +129,20 @@ func main() {
 	if len(os.Getenv("GOMAXPROCS")) == 0 {
 		runtime.GOMAXPROCS(runtime.NumCPU())
 	}
+	//in, out, errout := os.Stdin, os.Stdout, os.Stderr
+	out := os.Stdout
 	command := cli.CommandFor("oc")
 	// kcommand := cli.CommandFor("kubectl")
 
 	// modify scc settings accordingly
+	securityClient, err := f.OpenshiftInternalSecurityClient()
+	checkErr(err)
 	sa := "system:serviceaccount:" + namespace + ":" + bp.DefaultServiceAccountName
 	if sflag != bp.SecurityContextConstraintRestricted {
 		patch, err := json.Marshal(scc{Priority: 1})
 		checkErr(err)
-		os.Args = []string{"oc", "patch", "scc", sflag, "--patch", string(patch)}
-		if err := command.Execute(); err != nil {
-			os.Exit(1)
-		}
+		_, err = securityClient.Security().SecurityContextConstraints().Patch(sflag, types.StrategicMergePatchType, patch, "")
+		checkErr(err)
 		os.Args = []string{"oc", "adm", "policy", "add-scc-to-user", sflag, sa}
 		if err := command.Execute(); err != nil {
 			os.Exit(1)
@@ -145,10 +150,23 @@ func main() {
 	}
 
 	if sflag != bp.SecurityContextConstraintsAnyUID {
-		os.Args = []string{"oc", "adm", "policy", "remove-scc-from-group", bp.SecurityContextConstraintsAnyUID, "system:cluster-admins"}
-		if err := command.Execute(); err != nil {
-			os.Exit(1)
+		o := &policy.SCCModificationOptions{}
+		o.Out = out
+		// mapper, _ := f.Object()
+		o.IsGroup = true
+		o.SCCName = "anyuid"
+		o.Subjects = authorizationapi.BuildSubjects([]string{}, []string{"system:cluster-admins"})
+		o.SCCInterface = securityClient.Security().SecurityContextConstraints()
+		o.DefaultSubjectNamespace, _, err = f.DefaultNamespace()
+		checkErr(err)
+		if err := o.RemoveSCC(); err != nil {
+			kcmdutil.CheckErr(err)
 		}
+
+		//os.Args = []string{"oc", "adm", "policy", "remove-scc-from-group", bp.SecurityContextConstraintsAnyUID, "system:cluster-admins"}
+		//if err := command.Execute(); err != nil {
+		//	os.Exit(1)
+		//}
 	}
 
 	t3 := time.Since(t)
