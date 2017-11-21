@@ -43,7 +43,7 @@ import (
 // 4. start real kubelet pointed to manifest dir - should deploy pod
 
 func main() {
-	t := time.Now()
+	n := time.Now()
 	var sccopts []string
 	sflag := cmdutil.Env("OPENSHIFT_SCC", bp.SecurityContextConstraintRestricted)
 	os.Setenv("TEST_ETCD_DIR", testutil.GetBaseDir()+"/etcd")
@@ -104,7 +104,8 @@ func main() {
 		time.Sleep(time.Millisecond * 200)
 		_, err = kclient.Core().ServiceAccounts(namespace).Get(bp.DefaultServiceAccountName, metav1.GetOptions{})
 	}
-	t2 := time.Since(t)
+	n2 := time.Since(n)
+	nnew := time.Now()
 	//in, out, errout := os.Stdin, os.Stdout, os.Stderr
 
 	// modify scc settings accordingly
@@ -113,7 +114,8 @@ func main() {
 	ch := make(chan bool)
 	go sccMod(sflag, namespace, securityClient, ch)
 	go sccRm(sflag, namespace, securityClient, ch)
-	t3 := time.Since(t)
+	n3 := time.Since(nnew)
+	nnew = time.Now()
 
 	// execute cli command
 	/*
@@ -168,11 +170,13 @@ func main() {
 
 	fmt.Println("")
 	fmt.Println("time from post master ready...")
-	fmt.Println(t2)
+	fmt.Println(n2)
 	fmt.Println("time to post scc mods...")
-	fmt.Println(t3)
+	fmt.Println(n3)
 	fmt.Println("to finish.")
-	fmt.Println(time.Since(t))
+	fmt.Println(time.Since(nnew))
+	fmt.Println("Total")
+	fmt.Println(time.Since(n))
 
 	/*
 		os.Args = []string{"oc", "get", "pod", pod.GetName(), "--namespace=" + namespace, "--output=yaml"}
