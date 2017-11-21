@@ -47,6 +47,7 @@ import (
 // 4. start real kubelet pointed to manifest dir - should deploy pod
 
 func main() {
+	t := time.Now()
 	var sccopts []string
 	namespace := "default"
 	sflag := cmdutil.Env("OPENSHIFT_SCC", bp.SecurityContextConstraintRestricted)
@@ -75,14 +76,17 @@ func main() {
 	//os.Setenv("KUBELET_NETWORK_ARGS", "")
 	mconfig, nconfig, _, err := testserver.DefaultAllInOneOptions()
 	checkErr(err)
+	kconfig := testutil.KubeConfigPath()
+	os.Setenv("KUBECONFIG", kconfig)
 	mpath := testutil.GetBaseDir() + "/manifests"
 	nconfig.PodManifestConfig = &configapi.PodManifestConfig{
 		Path: mpath,
 		FileCheckIntervalSeconds: int64(5),
 	}
-	// kconfig, err := testserver.StartConfiguredAllInOne(mconfig, nconfig, components)
-	kconfig, err := testserver.StartConfiguredMaster(mconfig)
-	os.Setenv("KUBECONFIG", kconfig)
+	_, err = testserver.StartConfiguredMaster(mconfig)
+	checkErr(err)
+	t2 := time.Since(t)
+
 	if _, err := os.Stat(mpath); os.IsNotExist(err) {
 		os.Mkdir(mpath, 0755)
 	}
@@ -106,8 +110,8 @@ func main() {
 	i := 0
 	for err != nil {
 		//fmt.Printf("\n%#v\n", i)
-		if i < 5 {
-			time.Sleep(time.Second * 3)
+		if i < 80 {
+			time.Sleep(time.Millisecond * 250)
 			_, err = kclient.Core().ServiceAccounts(namespace).Get(bp.DefaultServiceAccountName, metav1.GetOptions{})
 		}
 		i++
@@ -127,8 +131,7 @@ func main() {
 
 	// modify scc settings accordingly
 	sa := "system:serviceaccount:" + namespace + ":" + bp.DefaultServiceAccountName
-
-	if sflag != bp.SecurityContextConstraintRestricted {
+	if sflag != bp.SecurityContextConstraintRestricted && sflag != bp.SecurityContextConstraintsAnyUID {
 		patch, err := json.Marshal(scc{Priority: 1})
 		checkErr(err)
 		os.Args = []string{"oc", "patch", "scc", sflag, "--patch", string(patch)}
@@ -164,8 +167,8 @@ func main() {
 	checkErr(err)
 
 	// mirror pod mods
-	pod.Kind = "Pod"
-	pod.APIVersion = "v1"
+	//pod.Kind = "Pod"
+	//pod.APIVersion = "v1"
 	pod.Spec.ServiceAccountName = ""
 	pod.ObjectMeta.ResourceVersion = ""
 
@@ -185,8 +188,11 @@ func main() {
 	err = app.Run(s, kubeDeps)
 	checkErr(err)
 
-	fmt.Println("")
-	fmt.Println(podyf)
+	fmt.Println(string(jpod))
+
+	fmt.Println("time from post master to end")
+	fmt.Println(t2)
+	fmt.Println(time.Since(t))
 
 	/*
 		os.Args = []string{"oc", "get", "pod", pod.GetName(), "--namespace=" + namespace, "--output=yaml"}
