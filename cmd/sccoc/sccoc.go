@@ -79,7 +79,6 @@ func main() {
 	}
 	_, err = testserver.StartConfiguredMaster(mconfig)
 	checkErr(err)
-	t2 := time.Since(t)
 
 	if _, err := os.Stat(mpath); os.IsNotExist(err) {
 		os.Mkdir(mpath, 0755)
@@ -100,16 +99,12 @@ func main() {
 	checkErr(err)
 
 	// wait for default serviceaccount to exist
-	i := 0
 	_, err = kclient.Core().ServiceAccounts(namespace).Get(bp.DefaultServiceAccountName, metav1.GetOptions{})
-	for err != nil {
-		//fmt.Printf("\n%#v\n", i)
-		if i < 80 {
-			time.Sleep(time.Millisecond * 250)
-			_, err = kclient.Core().ServiceAccounts(namespace).Get(bp.DefaultServiceAccountName, metav1.GetOptions{})
-		}
-		i++
+	for i := 0; err != nil && i < 100; i++ {
+		time.Sleep(time.Millisecond * 200)
+		_, err = kclient.Core().ServiceAccounts(namespace).Get(bp.DefaultServiceAccountName, metav1.GetOptions{})
 	}
+	t2 := time.Since(t)
 	//in, out, errout := os.Stdin, os.Stdout, os.Stderr
 
 	// modify scc settings accordingly
@@ -167,8 +162,7 @@ func main() {
 	// ?? make the change permanent, edit the file /etc/sysctl.conf and add the line to the end of the file
 	// remove serviceaccount, secrets, resourceVersion from pod yaml before processing as mirror pod
 	s.RunOnce = true
-	err = app.Run(s, nodeconfig.KubeletDeps)
-	checkErr(err)
+	checkErr(app.Run(s, nodeconfig.KubeletDeps))
 
 	fmt.Println(string(jpod))
 

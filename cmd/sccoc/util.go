@@ -41,8 +41,7 @@ func sccMod(sflag string, namespace string, securityClient securityclientinterna
 		o.Subjects = authorizationapi.BuildSubjects([]string{sa}, []string{})
 		o.SCCInterface = securityClient.Security().SecurityContextConstraints()
 		o.DefaultSubjectNamespace = namespace
-		err = o.AddSCC()
-		checkErr(err)
+		checkErr(o.AddSCC())
 	}
 	ch <- true
 }
@@ -56,8 +55,7 @@ func sccRm(sflag string, namespace string, securityClient securityclientinternal
 		o.Subjects = authorizationapi.BuildSubjects([]string{}, []string{"system:cluster-admins"})
 		o.SCCInterface = securityClient.Security().SecurityContextConstraints()
 		o.DefaultSubjectNamespace = namespace
-		err := o.RemoveSCC()
-		checkErr(err)
+		checkErr(o.RemoveSCC())
 	}
 	ch <- true
 }
