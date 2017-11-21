@@ -48,7 +48,6 @@ func sccmod(sflag string, namespace string, securityClient securityclientinterna
 
 func sccrm(sflag string, namespace string, securityClient securityclientinternal.Interface) {
 	if sflag != bp.SecurityContextConstraintsAnyUID {
-		sa := "system:serviceaccount:" + namespace + ":" + bp.DefaultServiceAccountName
 		o := &policy.SCCModificationOptions{}
 		o.Out = os.Stdout
 		o.IsGroup = true
