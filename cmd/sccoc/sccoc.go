@@ -116,7 +116,6 @@ func main() {
 		_, err = kclient.Core().ServiceAccounts(namespace).Get(bp.DefaultServiceAccountName, metav1.GetOptions{})
 	}
 	n2 := time.Since(n)
-	nnew := time.Now()
 
 	//in, out, errout := os.Stdin, os.Stdout, os.Stderr
 
@@ -126,8 +125,6 @@ func main() {
 	ch := make(chan bool)
 	go sccMod(sflag, namespace, securityClient, ch)
 	go sccRm(sflag, namespace, securityClient, ch)
-	n3 := time.Since(nnew)
-	nnew = time.Now()
 
 	// execute cli command
 	/*
@@ -181,10 +178,6 @@ func main() {
 
 	fmt.Println("\ntime from post master ready...")
 	fmt.Println(n2)
-	fmt.Println("\ntime to post scc mods...")
-	fmt.Println(n3)
-	fmt.Println("\nto finish.")
-	fmt.Println(time.Since(nnew))
 	fmt.Println("\nTotal")
 	fmt.Println(time.Since(n))
 
