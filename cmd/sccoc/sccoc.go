@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/ghodss/yaml"
-	authorizationapi "github.com/openshift/origin/pkg/authorization/apis/authorization"
 	configapi "github.com/openshift/origin/pkg/cmd/server/api"
 	bp "github.com/openshift/origin/pkg/cmd/server/bootstrappolicy"
 	"github.com/openshift/origin/pkg/cmd/server/kubernetes/node"
@@ -18,13 +17,11 @@ import (
 	cmdutil "github.com/openshift/origin/pkg/cmd/util"
 	"github.com/openshift/origin/pkg/cmd/util/clientcmd"
 	"github.com/openshift/origin/pkg/cmd/util/serviceability"
-	"github.com/openshift/origin/pkg/oc/admin/policy"
 	"github.com/openshift/origin/pkg/oc/cli"
 	"github.com/openshift/origin/pkg/oc/cli/config"
 	testutil "github.com/openshift/origin/test/util"
 	testserver "github.com/openshift/origin/test/util/server"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 	kclientcmd "k8s.io/client-go/tools/clientcmd"
 	"k8s.io/kubernetes/cmd/kubelet/app"
 	"k8s.io/kubernetes/pkg/util/logs"
@@ -129,44 +126,14 @@ func main() {
 		runtime.GOMAXPROCS(runtime.NumCPU())
 	}
 	//in, out, errout := os.Stdin, os.Stdout, os.Stderr
-	out := os.Stdout
 	command := cli.CommandFor("oc")
 	// kcommand := cli.CommandFor("kubectl")
 
 	// modify scc settings accordingly
 	securityClient, err := f.OpenshiftInternalSecurityClient()
 	checkErr(err)
-	sa := "system:serviceaccount:" + namespace + ":" + bp.DefaultServiceAccountName
-	if sflag != bp.SecurityContextConstraintRestricted && sflag != bp.SecurityContextConstraintsAnyUID {
-		patch, err := json.Marshal(scc{Priority: 1})
-		checkErr(err)
-		_, err = securityClient.Security().SecurityContextConstraints().Patch(sflag, types.StrategicMergePatchType, patch, "")
-		checkErr(err)
-
-		o := &policy.SCCModificationOptions{}
-		o.Out = out
-		o.SCCName = sflag
-		o.Subjects = authorizationapi.BuildSubjects([]string{sa}, []string{})
-		o.SCCInterface = securityClient.Security().SecurityContextConstraints()
-		o.DefaultSubjectNamespace = namespace
-		checkErr(err)
-		err = o.AddSCC()
-		checkErr(err)
-	}
-
-	if sflag != bp.SecurityContextConstraintsAnyUID {
-		o := &policy.SCCModificationOptions{}
-		o.Out = out
-		o.IsGroup = true
-		o.SCCName = bp.SecurityContextConstraintsAnyUID
-		o.Subjects = authorizationapi.BuildSubjects([]string{}, []string{"system:cluster-admins"})
-		o.SCCInterface = securityClient.Security().SecurityContextConstraints()
-		o.DefaultSubjectNamespace = namespace
-		checkErr(err)
-		err = o.RemoveSCC()
-		checkErr(err)
-	}
-
+	sccmod(sflag, namespace, securityClient)
+	sccrm(sflag, namespace, securityClient)
 	t3 := time.Since(t)
 
 	// execute cli command
