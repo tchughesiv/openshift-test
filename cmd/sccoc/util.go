@@ -27,7 +27,7 @@ func contains(sccopts []string, sflag string) bool {
 	return false
 }
 
-func sccmod(sflag string, namespace string, securityClient securityclientinternal.Interface, ch chan<- bool) {
+func sccMod(sflag string, namespace string, securityClient securityclientinternal.Interface, ch chan<- bool) {
 	if sflag != bp.SecurityContextConstraintRestricted && sflag != bp.SecurityContextConstraintsAnyUID {
 		sa := "system:serviceaccount:" + namespace + ":" + bp.DefaultServiceAccountName
 		patch, err := json.Marshal(scc{Priority: 1})
@@ -47,7 +47,7 @@ func sccmod(sflag string, namespace string, securityClient securityclientinterna
 	ch <- true
 }
 
-func sccrm(sflag string, namespace string, securityClient securityclientinternal.Interface, ch chan<- bool) {
+func sccRm(sflag string, namespace string, securityClient securityclientinternal.Interface, ch chan<- bool) {
 	if sflag != bp.SecurityContextConstraintsAnyUID {
 		o := &policy.SCCModificationOptions{}
 		o.Out = os.Stdout

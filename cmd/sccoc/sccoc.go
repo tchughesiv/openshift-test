@@ -71,12 +71,11 @@ func main() {
 	//os.Setenv("KUBELET_NETWORK_ARGS", "")
 	mconfig, nconfig, _, err := testserver.DefaultAllInOneOptions()
 	checkErr(err)
-	kconfig := testutil.KubeConfigPath()
-	os.Setenv("KUBECONFIG", kconfig)
+	os.Setenv("KUBECONFIG", testutil.KubeConfigPath())
 	mpath := testutil.GetBaseDir() + "/manifests"
 	nconfig.PodManifestConfig = &configapi.PodManifestConfig{
 		Path: mpath,
-		FileCheckIntervalSeconds: int64(5),
+		FileCheckIntervalSeconds: int64(2),
 	}
 	_, err = testserver.StartConfiguredMaster(mconfig)
 	checkErr(err)
@@ -117,8 +116,8 @@ func main() {
 	securityClient, err := f.OpenshiftInternalSecurityClient()
 	checkErr(err)
 	ch := make(chan bool)
-	go sccmod(sflag, namespace, securityClient, ch)
-	go sccrm(sflag, namespace, securityClient, ch)
+	go sccMod(sflag, namespace, securityClient, ch)
+	go sccRm(sflag, namespace, securityClient, ch)
 	t3 := time.Since(t)
 
 	// execute cli command
