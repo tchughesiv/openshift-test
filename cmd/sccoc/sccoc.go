@@ -167,9 +167,11 @@ func main() {
 	fmt.Println(string(jpod))
 
 	fmt.Println("")
-	fmt.Println("time from post master, post scc, to finish")
+	fmt.Println("time from post master ready...")
 	fmt.Println(t2)
+	fmt.Println("time to post scc mods...")
 	fmt.Println(t3)
+	fmt.Println("to finish.")
 	fmt.Println(time.Since(t))
 
 	/*
