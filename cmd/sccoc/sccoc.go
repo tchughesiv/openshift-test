@@ -88,7 +88,7 @@ func main() {
 	checkErr(err)
 	nodeconfig, err := node.New(*nconfig, s)
 	checkErr(err)
-	kubeDeps := nodeconfig.KubeletDeps
+	// kubeDeps := nodeconfig.KubeletDeps
 
 	cfg, err := config.NewOpenShiftClientConfigLoadingRules().Load()
 	checkErr(err)
@@ -100,8 +100,8 @@ func main() {
 	checkErr(err)
 
 	// wait for default serviceaccount to exist
-	_, err = kclient.Core().ServiceAccounts(namespace).Get(bp.DefaultServiceAccountName, metav1.GetOptions{})
 	i := 0
+	_, err = kclient.Core().ServiceAccounts(namespace).Get(bp.DefaultServiceAccountName, metav1.GetOptions{})
 	for err != nil {
 		//fmt.Printf("\n%#v\n", i)
 		if i < 80 {
@@ -167,13 +167,13 @@ func main() {
 	// ?? make the change permanent, edit the file /etc/sysctl.conf and add the line to the end of the file
 	// remove serviceaccount, secrets, resourceVersion from pod yaml before processing as mirror pod
 	s.RunOnce = true
-	err = app.Run(s, kubeDeps)
+	err = app.Run(s, nodeconfig.KubeletDeps)
 	checkErr(err)
 
 	fmt.Println(string(jpod))
 
 	fmt.Println("")
-	fmt.Println("time from post master, post scc, to end")
+	fmt.Println("time from post master, post scc, to finish")
 	fmt.Println(t2)
 	fmt.Println(t3)
 	fmt.Println(time.Since(t))
