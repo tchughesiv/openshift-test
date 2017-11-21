@@ -49,8 +49,8 @@ var (
 )
 
 func init() {
-	os.Setenv("GLOG_LEVEL", "0")
-	os.Args = []string{"glog", "-stderrthreshold=ERROR", "-logtostderr=false", "-log_dir=" + d, "-v=" + os.Getenv("GLOG_LEVEL")}
+	gl := cmdutil.Env("GLOG_LEVEL", "ERROR") // INFO, ERROR, FATAL
+	os.Args = []string{"glog", "-stderrthreshold=" + gl, "-logtostderr=false", "-log_dir=" + d}
 	flag.Parse()
 }
 
