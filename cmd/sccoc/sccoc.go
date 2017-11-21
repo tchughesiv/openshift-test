@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/ghodss/yaml"
+	"github.com/golang/glog"
 	configapi "github.com/openshift/origin/pkg/cmd/server/api"
 	bp "github.com/openshift/origin/pkg/cmd/server/bootstrappolicy"
 	"github.com/openshift/origin/pkg/cmd/server/kubernetes/node"
@@ -44,6 +45,8 @@ import (
 
 func main() {
 	n := time.Now()
+	var gl glog.Level
+	checkErr(gl.Set("1"))
 	var sccopts []string
 	sflag := cmdutil.Env("OPENSHIFT_SCC", bp.SecurityContextConstraintRestricted)
 	os.Setenv("TEST_ETCD_DIR", testutil.GetBaseDir()+"/etcd")
@@ -52,7 +55,6 @@ func main() {
 		fmt.Printf("\nError: unknown command %#v for %#v... must use \"run\"\n", os.Args[1], os.Args[0])
 		os.Exit(1)
 	}
-	// clArgs := os.Args
 	groups, users := bp.GetBoostrapSCCAccess(bp.DefaultOpenShiftInfraNamespace)
 	for _, v := range bp.GetBootstrapSecurityContextConstraints(groups, users) {
 		sccopts = append(sccopts, v.Name)
@@ -106,6 +108,7 @@ func main() {
 	}
 	n2 := time.Since(n)
 	nnew := time.Now()
+
 	//in, out, errout := os.Stdin, os.Stdout, os.Stderr
 
 	// modify scc settings accordingly
@@ -133,7 +136,6 @@ func main() {
 	command := cli.CommandFor("oc")
 	os.Args = append(os.Args, "--restart=Never")
 	os.Args = append(os.Args, "--namespace="+namespace)
-	// os.Args = clArgs
 	if err := command.Execute(); err != nil {
 		os.Exit(1)
 	}
@@ -168,14 +170,13 @@ func main() {
 
 	fmt.Println(string(jpod))
 
-	fmt.Println("")
-	fmt.Println("time from post master ready...")
+	fmt.Println("\ntime from post master ready...")
 	fmt.Println(n2)
-	fmt.Println("time to post scc mods...")
+	fmt.Println("\ntime to post scc mods...")
 	fmt.Println(n3)
-	fmt.Println("to finish.")
+	fmt.Println("\nto finish.")
 	fmt.Println(time.Since(nnew))
-	fmt.Println("Total")
+	fmt.Println("\nTotal")
 	fmt.Println(time.Since(n))
 
 	/*
