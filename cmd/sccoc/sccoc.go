@@ -96,6 +96,7 @@ func main() {
 
 	s, err := nodeoptions.Build(*nconfig)
 	checkErr(err)
+	s.ClusterDNS = []string{mconfig.DNSConfig.BindAddress}
 	nodeconfig, err := node.New(*nconfig, s)
 	checkErr(err)
 	// kubeDeps := nodeconfig.KubeletDeps
@@ -172,7 +173,6 @@ func main() {
 	// ?? make the change permanent, edit the file /etc/sysctl.conf and add the line to the end of the file
 	// remove serviceaccount, secrets, resourceVersion from pod yaml before processing as mirror pod
 	s.RunOnce = true
-	s.ClusterDNS = []string{mconfig.DNSConfig.BindAddress}
 	checkErr(app.Run(s, nodeconfig.KubeletDeps))
 
 	// fmt.Println(string(jpod))
