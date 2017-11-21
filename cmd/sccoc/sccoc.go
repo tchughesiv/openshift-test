@@ -165,7 +165,7 @@ func main() {
 	checkErr(err)
 	pyaml, err := yaml.JSONToYAML(jpod)
 	checkErr(err)
-	ioutil.WriteFile(podyf, pyaml, os.FileMode(0600))
+	ioutil.WriteFile(podyf, pyaml, os.FileMode(0644))
 
 	// Run kubelet
 	// requires higher max user watches for file method...
