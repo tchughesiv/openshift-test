@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/ghodss/yaml"
+	"github.com/golang/glog"
 	configapi "github.com/openshift/origin/pkg/cmd/server/api"
 	bp "github.com/openshift/origin/pkg/cmd/server/bootstrappolicy"
 	"github.com/openshift/origin/pkg/cmd/server/kubernetes/node"
@@ -41,21 +42,27 @@ import (
 // 1. start test master
 // 2. execute "run" against to generate pod yaml w/ scc
 // 3. export yaml w/ sc settings to pod manifest dir
-// 4. start real kubelet pointed to manifest dir - should deploy pod
+// 4. start kubelet pointed to manifest dir - should deploy pod
 var (
-	clArgs = os.Args
-	d      = testutil.GetBaseDir() + "/log"
-	n      = time.Now()
+	n    = time.Now()
+	args = os.Args
+	d    = testutil.GetBaseDir() + "/log"
 )
 
 func init() {
-	gl := cmdutil.Env("GLOG_LEVEL", "ERROR") // INFO, ERROR, FATAL
-	os.Args = []string{"glog", "-stderrthreshold=" + gl, "-logtostderr=false", "-log_dir=" + d}
-	flag.Parse()
+	v, b := os.LookupEnv("GLOG_V") // 0-10
+	if b {
+		var gv glog.Level
+		checkErr(gv.Set(v))
+	} else {
+		gl := cmdutil.Env("GLOG_LEVEL", "ERROR") // INFO, ERROR, FATAL
+		os.Args = []string{"glog", "-stderrthreshold=" + gl, "-logtostderr=false", "-log_dir=" + d}
+		flag.Parse()
+	}
 }
 
 func main() {
-	os.Args = clArgs
+	os.Args = args
 	var sccopts []string
 	sflag := cmdutil.Env("OPENSHIFT_SCC", bp.SecurityContextConstraintRestricted)
 	os.Setenv("KUBECONFIG", testutil.KubeConfigPath())
