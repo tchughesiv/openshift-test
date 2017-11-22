@@ -1,14 +1,13 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
-	"io/ioutil"
+	"math/rand"
 	"os"
+	"runtime"
 	"time"
 
-	"github.com/ghodss/yaml"
 	"github.com/golang/glog"
 	configapi "github.com/openshift/origin/pkg/cmd/server/api"
 	bp "github.com/openshift/origin/pkg/cmd/server/bootstrappolicy"
@@ -22,7 +21,6 @@ import (
 	testserver "github.com/openshift/origin/test/util/server"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kclientcmd "k8s.io/client-go/tools/clientcmd"
-	"k8s.io/kubernetes/cmd/kubelet/app"
 
 	// install all APIs
 	_ "github.com/openshift/origin/pkg/api/install"
@@ -38,7 +36,6 @@ import (
 // sudo KUBECONFIG=/tmp/openshift-integration/openshift.local.config/master/admin.kubeconfig oc get all --all-namespaces
 // maybe limit to just run???
 
-// Flow -
 // 1. start test master
 // 2. execute "run" against to generate pod yaml w/ scc
 // 3. export yaml w/ sc settings to pod manifest dir
@@ -50,6 +47,17 @@ var (
 )
 
 func init() {
+	/*
+		logs.InitLogs()
+		defer logs.FlushLogs()
+		defer serviceability.BehaviorOnPanic(os.Getenv("OPENSHIFT_ON_PANIC"))()
+		defer serviceability.Profile(os.Getenv("OPENSHIFT_PROFILE")).Stop()
+	*/
+	rand.Seed(time.Now().UTC().UnixNano())
+	if len(os.Getenv("GOMAXPROCS")) == 0 {
+		runtime.GOMAXPROCS(runtime.NumCPU())
+	}
+
 	v, b := os.LookupEnv("GLOG_V") // 0-10
 	if b {
 		var gv glog.Level
@@ -68,7 +76,10 @@ func main() {
 	os.Setenv("KUBECONFIG", testutil.KubeConfigPath())
 	os.Setenv("TEST_ETCD_DIR", testutil.GetBaseDir()+"/etcd")
 
-	if os.Args[1] != "run" {
+	if len(os.Args) == 1 {
+		fmt.Printf("\nError: unknown command for %#v... must use \"run\"\n", os.Args[0])
+		os.Exit(1)
+	} else if os.Args[1] != "run" {
 		fmt.Printf("\nError: unknown command %#v for %#v... must use \"run\"\n", os.Args[1], os.Args[0])
 		os.Exit(1)
 	}
@@ -133,19 +144,12 @@ func main() {
 	ch := make(chan bool)
 	go sccMod(sflag, namespace, securityClient, ch)
 	go sccRm(sflag, namespace, securityClient, ch)
+	fmt.Println(ch)
+
+	defer exportPod(kclient, namespace, mpath)
+	defer runKubelet(s, nodeconfig)
 
 	// execute cli command
-	/*
-		logs.InitLogs()
-		defer logs.FlushLogs()
-		defer serviceability.BehaviorOnPanic(os.Getenv("OPENSHIFT_ON_PANIC"))()
-		defer serviceability.Profile(os.Getenv("OPENSHIFT_PROFILE")).Stop()
-
-		rand.Seed(time.Now().UTC().UnixNano())
-		if len(os.Getenv("GOMAXPROCS")) == 0 {
-			runtime.GOMAXPROCS(runtime.NumCPU())
-		}
-	*/
 	// kcommand := cli.CommandFor("kubectl")
 	command := cli.CommandFor("oc")
 	os.Args = append(os.Args, "--restart=Never")
@@ -153,34 +157,6 @@ func main() {
 	if err := command.Execute(); err != nil {
 		os.Exit(1)
 	}
-
-	fmt.Printf("\n")
-	podint := kclient.Core().Pods(namespace)
-	podl, err := podint.List(metav1.ListOptions{})
-	checkErr(err)
-	pod, err := podint.Get(podl.Items[0].GetName(), metav1.GetOptions{})
-	checkErr(err)
-
-	// mirror pod mods
-	//pod.Kind = "Pod"
-	//pod.APIVersion = "v1"
-	pod.Spec.ServiceAccountName = ""
-	pod.ObjectMeta.ResourceVersion = ""
-
-	podyf := mpath + "/" + pod.Name + "-pod.yaml"
-	jpod, err := json.Marshal(pod)
-	checkErr(err)
-	pyaml, err := yaml.JSONToYAML(jpod)
-	checkErr(err)
-	ioutil.WriteFile(podyf, pyaml, os.FileMode(0644))
-
-	// Run kubelet
-	// requires higher max user watches for file method...
-	// sudo sysctl fs.inotify.max_user_watches=524288
-	// ?? make the change permanent, edit the file /etc/sysctl.conf and add the line to the end of the file
-	// remove serviceaccount, secrets, resourceVersion from pod yaml before processing as mirror pod
-	s.RunOnce = true
-	checkErr(app.Run(s, nodeconfig.KubeletDeps))
 
 	// fmt.Println(string(jpod))
 
