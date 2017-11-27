@@ -46,21 +46,42 @@ func exportPod(kclient internalclientset.Interface, namespace string, mpath stri
 	checkErr(err)
 
 	// mirror pod mods
-	//pod.Kind = "Pod"
-	//pod.APIVersion = "v1"
-	//pod.Spec.ServiceAccountName = ""
-	//pod.ObjectMeta.ResourceVersion = ""
-
 	podyf := mpath + "/" + pod.Name + "-pod.yaml"
 	externalPod := &v1.Pod{}
 	checkErr(v1.Convert_api_Pod_To_v1_Pod(pod, externalPod, nil))
-	jpod, err := json.Marshal(externalPod)
+	p := *externalPod
+	p.TypeMeta.Kind = "Pod"
+	p.TypeMeta.APIVersion = "v1"
+	p.ObjectMeta.ResourceVersion = ""
+	p.Spec.ServiceAccountName = ""
+	p.Spec.DeprecatedServiceAccount = ""
+	//automountSaToken := false
+	//p.Spec.AutomountServiceAccountToken = &automountSaToken
+	for i, v := range p.Spec.Volumes {
+		if v.Secret != nil {
+			fmt.Println("")
+			fmt.Println(v.Name)
+			fmt.Println("")
+			for _, c := range p.Spec.Containers {
+				for x, m := range c.VolumeMounts {
+					if m.Name == v.Name {
+						fmt.Println("")
+						fmt.Println(m.Name)
+						fmt.Println("")
+						c.VolumeMounts = append(c.VolumeMounts[:x], c.VolumeMounts[x+1:]...)
+					}
+				}
+			}
+			p.Spec.Volumes = append(p.Spec.Volumes[:i], p.Spec.Volumes[i+1:]...)
+		}
+	}
+	jpod, err := json.Marshal(p)
 	checkErr(err)
 	pyaml, err := yaml.JSONToYAML(jpod)
 	checkErr(err)
 	ioutil.WriteFile(podyf, pyaml, os.FileMode(0644))
 
-	return externalPod, &podl.Items
+	return &p, &podl.Items
 }
 
 func runKubelet(s *kubeletoptions.KubeletServer, nodeconfig *node.NodeConfig) {

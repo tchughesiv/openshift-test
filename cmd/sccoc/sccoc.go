@@ -28,7 +28,6 @@ import (
 	_ "k8s.io/kubernetes/pkg/apis/autoscaling/install"
 	_ "k8s.io/kubernetes/pkg/apis/batch/install"
 	_ "k8s.io/kubernetes/pkg/apis/extensions/install"
-	"k8s.io/kubernetes/pkg/kubelet"
 )
 
 // OPENSHIFT_SCC=nonroot origin/_output/local/bin/linux/amd64/sccoc run testpod --image=registry.centos.org/container-examples/starter-arbitrary-uid
@@ -146,8 +145,6 @@ func main() {
 	go sccRm(sflag, namespace, securityClient, ch)
 	fmt.Println(ch)
 
-	runKubelet(s, nodeconfig)
-
 	// execute cli command
 	// kcommand := cli.CommandFor("kubectl")
 	command := cli.CommandFor("oc")
@@ -157,35 +154,33 @@ func main() {
 		os.Exit(1)
 	}
 
-	epod, _ := exportPod(kclient, namespace, mpath)
+	p, _ := exportPod(kclient, namespace, mpath)
+	runKubelet(s, nodeconfig)
 
-	kubeDeps := nodeconfig.KubeletDeps
-	kubeCfg := nodeconfig.KubeletServer.KubeletConfiguration
-	kubeFlags := s.KubeletFlags
-
-	k, err := kubelet.NewMainKubelet(&kubeCfg, kubeDeps, &kubeFlags.ContainerRuntimeOptions, true, kubeFlags.HostnameOverride, kubeFlags.NodeIP, kubeFlags.ProviderID)
-	checkErr(err)
-	rt := k.GetRuntime()
-	i, err := rt.ListImages()
-	checkErr(err)
-	pl := k.GetPods()
-	//externalPod := &v1.Pod{}
-	//checkErr(v1.Convert_api_Pod_To_v1_Pod(pod, externalPod, nil))
-	pl = append(pl, epod)
-	k.HandlePodAdditions(pl)
-
-	// checkErr(k.HandlePodCleanups())
-	// fmt.Println(string(jpod))
-
+	/*
+		kubeDeps := nodeconfig.KubeletDeps
+		kubeCfg := nodeconfig.KubeletServer.KubeletConfiguration
+		kubeFlags := s.KubeletFlags
+			k, err := kubelet.NewMainKubelet(&kubeCfg, kubeDeps, &kubeFlags.ContainerRuntimeOptions, true, kubeFlags.HostnameOverride, kubeFlags.NodeIP, kubeFlags.ProviderID)
+			checkErr(err)
+			rt := k.GetRuntime()
+			i, err := rt.ListImages()
+			checkErr(err)
+			pl := k.GetPods()
+			pl = append(pl, epod)
+			k.HandlePodAdditions(pl)
+			fmt.Println("")
+			fmt.Println(pl)
+			fmt.Println("")
+			fmt.Println(i)
+	*/
 	fmt.Println("\ntime until master ready...")
 	fmt.Println(n2)
 	fmt.Println("\nTotal time.")
 	fmt.Println(time.Since(n))
-	fmt.Println("")
-	fmt.Println(pl)
-	fmt.Println("")
-	fmt.Println(i)
 
+	fmt.Println("\n")
+	fmt.Println(p)
 	/*
 		os.Args = []string{"oc", "get", "pod", pod.GetName(), "--namespace=" + namespace, "--output=yaml"}
 		if err := kcommand.Execute(); err != nil {
