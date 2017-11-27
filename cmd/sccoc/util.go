@@ -52,6 +52,7 @@ func exportPod(kclient internalclientset.Interface, namespace string, mpath stri
 	p := *externalPod
 	p.TypeMeta.Kind = "Pod"
 	p.TypeMeta.APIVersion = "v1"
+	p.ObjectMeta.UID = ""
 	p.ObjectMeta.ResourceVersion = ""
 	p.Spec.ServiceAccountName = ""
 	p.Spec.DeprecatedServiceAccount = ""
@@ -59,16 +60,13 @@ func exportPod(kclient internalclientset.Interface, namespace string, mpath stri
 	//p.Spec.AutomountServiceAccountToken = &automountSaToken
 	for i, v := range p.Spec.Volumes {
 		if v.Secret != nil {
-			fmt.Println("")
-			fmt.Println(v.Name)
-			fmt.Println("")
-			for _, c := range p.Spec.Containers {
+			fmt.Println("\n" + v.Name)
+			for n, c := range p.Spec.Containers {
 				for x, m := range c.VolumeMounts {
 					if m.Name == v.Name {
-						fmt.Println("")
-						fmt.Println(m.Name)
-						fmt.Println("")
-						c.VolumeMounts = append(c.VolumeMounts[:x], c.VolumeMounts[x+1:]...)
+						fmt.Println("\n" + m.Name + "\n")
+						t := p.Spec.Containers[n]
+						t.VolumeMounts = append(t.VolumeMounts[:x], t.VolumeMounts[x+1:]...)
 					}
 				}
 			}
