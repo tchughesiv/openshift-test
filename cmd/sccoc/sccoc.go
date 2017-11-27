@@ -28,6 +28,7 @@ import (
 	_ "k8s.io/kubernetes/pkg/apis/autoscaling/install"
 	_ "k8s.io/kubernetes/pkg/apis/batch/install"
 	_ "k8s.io/kubernetes/pkg/apis/extensions/install"
+	"k8s.io/kubernetes/pkg/kubelet"
 )
 
 // OPENSHIFT_SCC=nonroot origin/_output/local/bin/linux/amd64/sccoc run testpod --image=registry.centos.org/container-examples/starter-arbitrary-uid
@@ -108,7 +109,6 @@ func main() {
 		Path: mpath,
 		FileCheckIntervalSeconds: int64(2),
 	}
-	nconfig.NodeName = ""
 	_, err = testserver.StartConfiguredMaster(mconfig)
 	checkErr(err)
 	mkDir(mpath)
@@ -156,23 +156,22 @@ func main() {
 	exportPod(kclient, namespace, mpath)
 	runKubelet(s, nodeconfig)
 
-	/*
-		kubeDeps := nodeconfig.KubeletDeps
-		kubeCfg := nodeconfig.KubeletServer.KubeletConfiguration
-		kubeFlags := s.KubeletFlags
-		k, err := kubelet.NewMainKubelet(&kubeCfg, kubeDeps, &kubeFlags.ContainerRuntimeOptions, true, kubeFlags.HostnameOverride, kubeFlags.NodeIP, kubeFlags.ProviderID)
-		checkErr(err)
-		rt := k.GetRuntime()
-		i, err := rt.ListImages()
-		checkErr(err)
-		pl := k.GetPods()
-		pl = append(pl, epod)
-		k.HandlePodAdditions(pl)
-		fmt.Println("")
-		fmt.Println(pl)
-		fmt.Println("")
-		fmt.Println(i)
-	*/
+	kubeDeps := nodeconfig.KubeletDeps
+	kubeCfg := nodeconfig.KubeletServer.KubeletConfiguration
+	kubeFlags := s.KubeletFlags
+	k, err := kubelet.NewMainKubelet(&kubeCfg, kubeDeps, &kubeFlags.ContainerRuntimeOptions, true, kubeFlags.HostnameOverride, kubeFlags.NodeIP, kubeFlags.ProviderID)
+	checkErr(err)
+	rt := k.GetRuntime()
+	i, err := rt.ListImages()
+	checkErr(err)
+	pl := k.GetPods()
+	// pl = append(pl, epod)
+	// k.HandlePodAdditions(pl)
+	fmt.Println("")
+	fmt.Println(pl)
+	fmt.Println("")
+	fmt.Println(i)
+
 	fmt.Println("\ntime until master ready...")
 	fmt.Println(n2)
 	fmt.Println("\nTotal time.")
