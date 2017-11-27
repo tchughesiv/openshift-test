@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	configapi "github.com/openshift/origin/pkg/cmd/server/api"
 	bp "github.com/openshift/origin/pkg/cmd/server/bootstrappolicy"
 	"github.com/openshift/origin/pkg/cmd/server/kubernetes/node"
 	nodeoptions "github.com/openshift/origin/pkg/cmd/server/kubernetes/node/options"
@@ -20,7 +21,6 @@ import (
 	testserver "github.com/openshift/origin/test/util/server"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kclientcmd "k8s.io/client-go/tools/clientcmd"
-	v1 "k8s.io/kubernetes/pkg/api/v1"
 
 	// install all APIs
 	_ "github.com/openshift/origin/pkg/api/install"
@@ -105,12 +105,10 @@ func main() {
 
 	mkDir(d)
 	mpath := testutil.GetBaseDir() + "/manifests"
-	/*
-		nconfig.PodManifestConfig = &configapi.PodManifestConfig{
-			Path: mpath,
-			FileCheckIntervalSeconds: int64(2),
-		}
-	*/
+	nconfig.PodManifestConfig = &configapi.PodManifestConfig{
+		Path: mpath,
+		FileCheckIntervalSeconds: int64(2),
+	}
 	_, err = testserver.StartConfiguredMaster(mconfig)
 	checkErr(err)
 	mkDir(mpath)
@@ -159,7 +157,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	pod, podl := exportPod(kclient, namespace, mpath)
+	epod, _ := exportPod(kclient, namespace, mpath)
 
 	kubeDeps := nodeconfig.KubeletDeps
 	kubeCfg := nodeconfig.KubeletServer.KubeletConfiguration
@@ -171,20 +169,18 @@ func main() {
 	i, err := rt.ListImages()
 	checkErr(err)
 	pl := k.GetPods()
-	externalPod := &v1.Pod{}
-	checkErr(v1.Convert_api_Pod_To_v1_Pod(pod, externalPod, nil))
-	pl = append(pl, externalPod)
+	//externalPod := &v1.Pod{}
+	//checkErr(v1.Convert_api_Pod_To_v1_Pod(pod, externalPod, nil))
+	pl = append(pl, epod)
 	k.HandlePodAdditions(pl)
-	// checkErr(k.HandlePodCleanups())
 
+	// checkErr(k.HandlePodCleanups())
 	// fmt.Println(string(jpod))
 
 	fmt.Println("\ntime until master ready...")
 	fmt.Println(n2)
 	fmt.Println("\nTotal time.")
 	fmt.Println(time.Since(n))
-	fmt.Println("")
-	fmt.Println(podl)
 	fmt.Println("")
 	fmt.Println(pl)
 	fmt.Println("")

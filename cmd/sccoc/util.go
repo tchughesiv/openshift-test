@@ -18,6 +18,7 @@ import (
 	"k8s.io/kubernetes/cmd/kubelet/app"
 	kubeletoptions "k8s.io/kubernetes/cmd/kubelet/app/options"
 	api "k8s.io/kubernetes/pkg/api"
+	v1 "k8s.io/kubernetes/pkg/api/v1"
 	"k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
 )
 
@@ -36,7 +37,7 @@ func contains(sccopts []string, sflag string) bool {
 	return false
 }
 
-func exportPod(kclient internalclientset.Interface, namespace string, mpath string) (*api.Pod, *[]api.Pod) {
+func exportPod(kclient internalclientset.Interface, namespace string, mpath string) (*v1.Pod, *[]api.Pod) {
 	fmt.Printf("\n")
 	podint := kclient.Core().Pods(namespace)
 	podl, err := podint.List(metav1.ListOptions{})
@@ -51,13 +52,15 @@ func exportPod(kclient internalclientset.Interface, namespace string, mpath stri
 	//pod.ObjectMeta.ResourceVersion = ""
 
 	podyf := mpath + "/" + pod.Name + "-pod.yaml"
-	jpod, err := json.Marshal(pod)
+	externalPod := &v1.Pod{}
+	checkErr(v1.Convert_api_Pod_To_v1_Pod(pod, externalPod, nil))
+	jpod, err := json.Marshal(externalPod)
 	checkErr(err)
 	pyaml, err := yaml.JSONToYAML(jpod)
 	checkErr(err)
 	ioutil.WriteFile(podyf, pyaml, os.FileMode(0644))
 
-	return pod, &podl.Items
+	return externalPod, &podl.Items
 }
 
 func runKubelet(s *kubeletoptions.KubeletServer, nodeconfig *node.NodeConfig) {
