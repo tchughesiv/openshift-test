@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	configapi "github.com/openshift/origin/pkg/cmd/server/api"
 	bp "github.com/openshift/origin/pkg/cmd/server/bootstrappolicy"
 	"github.com/openshift/origin/pkg/cmd/server/kubernetes/node"
 	nodeoptions "github.com/openshift/origin/pkg/cmd/server/kubernetes/node/options"
@@ -21,6 +20,7 @@ import (
 	testserver "github.com/openshift/origin/test/util/server"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kclientcmd "k8s.io/client-go/tools/clientcmd"
+	v1 "k8s.io/kubernetes/pkg/api/v1"
 
 	// install all APIs
 	_ "github.com/openshift/origin/pkg/api/install"
@@ -28,6 +28,7 @@ import (
 	_ "k8s.io/kubernetes/pkg/apis/autoscaling/install"
 	_ "k8s.io/kubernetes/pkg/apis/batch/install"
 	_ "k8s.io/kubernetes/pkg/apis/extensions/install"
+	"k8s.io/kubernetes/pkg/kubelet"
 )
 
 // OPENSHIFT_SCC=nonroot origin/_output/local/bin/linux/amd64/sccoc run testpod --image=registry.centos.org/container-examples/starter-arbitrary-uid
@@ -97,27 +98,28 @@ func main() {
 		os.Exit(1)
 	}
 
-	// How can supress the "startup" logs????
+	// How can suppress the "startup" logs????
 	//os.Setenv("KUBELET_NETWORK_ARGS", "")
 	mconfig, nconfig, _, err := testserver.DefaultAllInOneOptions()
 	checkErr(err)
 
 	mkDir(d)
 	mpath := testutil.GetBaseDir() + "/manifests"
-	nconfig.PodManifestConfig = &configapi.PodManifestConfig{
-		Path: mpath,
-		FileCheckIntervalSeconds: int64(2),
-	}
+	/*
+		nconfig.PodManifestConfig = &configapi.PodManifestConfig{
+			Path: mpath,
+			FileCheckIntervalSeconds: int64(2),
+		}
+	*/
 	_, err = testserver.StartConfiguredMaster(mconfig)
 	checkErr(err)
 	mkDir(mpath)
 
 	s, err := nodeoptions.Build(*nconfig)
 	checkErr(err)
-	s.ClusterDNS = []string{mconfig.DNSConfig.BindAddress}
+	// s.ClusterDNS = []string{mconfig.DNSConfig.BindAddress}
 	nodeconfig, err := node.New(*nconfig, s)
 	checkErr(err)
-	// kubeDeps := nodeconfig.KubeletDeps
 
 	cfg, err := config.NewOpenShiftClientConfigLoadingRules().Load()
 	checkErr(err)
@@ -146,8 +148,7 @@ func main() {
 	go sccRm(sflag, namespace, securityClient, ch)
 	fmt.Println(ch)
 
-	defer exportPod(kclient, namespace, mpath)
-	defer runKubelet(s, nodeconfig)
+	runKubelet(s, nodeconfig)
 
 	// execute cli command
 	// kcommand := cli.CommandFor("kubectl")
@@ -158,12 +159,36 @@ func main() {
 		os.Exit(1)
 	}
 
+	pod, podl := exportPod(kclient, namespace, mpath)
+
+	kubeDeps := nodeconfig.KubeletDeps
+	kubeCfg := nodeconfig.KubeletServer.KubeletConfiguration
+	kubeFlags := s.KubeletFlags
+
+	k, err := kubelet.NewMainKubelet(&kubeCfg, kubeDeps, &kubeFlags.ContainerRuntimeOptions, true, kubeFlags.HostnameOverride, kubeFlags.NodeIP, kubeFlags.ProviderID)
+	checkErr(err)
+	rt := k.GetRuntime()
+	i, err := rt.ListImages()
+	checkErr(err)
+	pl := k.GetPods()
+	externalPod := &v1.Pod{}
+	checkErr(v1.Convert_api_Pod_To_v1_Pod(pod, externalPod, nil))
+	pl = append(pl, externalPod)
+	k.HandlePodAdditions(pl)
+	// checkErr(k.HandlePodCleanups())
+
 	// fmt.Println(string(jpod))
 
 	fmt.Println("\ntime until master ready...")
 	fmt.Println(n2)
 	fmt.Println("\nTotal time.")
 	fmt.Println(time.Since(n))
+	fmt.Println("")
+	fmt.Println(podl)
+	fmt.Println("")
+	fmt.Println(pl)
+	fmt.Println("")
+	fmt.Println(i)
 
 	/*
 		os.Args = []string{"oc", "get", "pod", pod.GetName(), "--namespace=" + namespace, "--output=yaml"}
