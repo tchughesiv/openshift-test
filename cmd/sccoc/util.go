@@ -61,10 +61,8 @@ func exportPod(kclient internalclientset.Interface, namespace string, mpath stri
 	p.Spec.DeprecatedServiceAccount = ""
 	p.Spec.DNSPolicy = ""
 	p.Spec.SchedulerName = ""
-	/*
-		automountSaToken := false
-		p.Spec.AutomountServiceAccountToken = &automountSaToken
-	*/
+	automountSaToken := false
+	p.Spec.AutomountServiceAccountToken = &automountSaToken
 
 	// remove secrets volume from pod & container(s)
 	for i, v := range p.Spec.Volumes {
