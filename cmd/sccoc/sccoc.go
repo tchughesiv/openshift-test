@@ -152,7 +152,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	p, _ := exportPod(kclient, namespace, mpath)
+	exportPod(kclient, namespace, mpath)
 	runKubelet(s, nodeconfig)
 
 	/*
@@ -177,8 +177,6 @@ func main() {
 	fmt.Println("\nTotal time.")
 	fmt.Println(time.Since(n))
 
-	fmt.Println("")
-	fmt.Println(p)
 	/*
 		os.Args = []string{"oc", "get", "pod", pod.GetName(), "--namespace=" + namespace, "--output=yaml"}
 		if err := kcommand.Execute(); err != nil {

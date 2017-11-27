@@ -17,7 +17,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/kubernetes/cmd/kubelet/app"
 	kubeletoptions "k8s.io/kubernetes/cmd/kubelet/app/options"
-	api "k8s.io/kubernetes/pkg/api"
 	v1 "k8s.io/kubernetes/pkg/api/v1"
 	"k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
 )
@@ -37,7 +36,7 @@ func contains(sccopts []string, sflag string) bool {
 	return false
 }
 
-func exportPod(kclient internalclientset.Interface, namespace string, mpath string) (*v1.Pod, *[]api.Pod) {
+func exportPod(kclient internalclientset.Interface, namespace string, mpath string) {
 	fmt.Printf("\n")
 	podint := kclient.Core().Pods(namespace)
 	podl, err := podint.List(metav1.ListOptions{})
@@ -58,6 +57,8 @@ func exportPod(kclient internalclientset.Interface, namespace string, mpath stri
 	p.Spec.DeprecatedServiceAccount = ""
 	automountSaToken := false
 	p.Spec.AutomountServiceAccountToken = &automountSaToken
+	p.Spec.SchedulerName = ""
+	p.Spec.DNSPolicy = ""
 	p.Status = v1.PodStatus{}
 	for i, v := range p.Spec.Volumes {
 		if v.Secret != nil {
@@ -77,8 +78,6 @@ func exportPod(kclient internalclientset.Interface, namespace string, mpath stri
 	pyaml, err := yaml.JSONToYAML(jpod)
 	checkErr(err)
 	ioutil.WriteFile(podyf, pyaml, os.FileMode(0644))
-
-	return &p, &podl.Items
 }
 
 func runKubelet(s *kubeletoptions.KubeletServer, nodeconfig *node.NodeConfig) {
