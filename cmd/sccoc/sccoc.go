@@ -140,10 +140,8 @@ func main() {
 	// modify scc settings accordingly
 	securityClient, err := f.OpenshiftInternalSecurityClient()
 	checkErr(err)
-	ch := make(chan bool)
-	go sccMod(sflag, namespace, securityClient, ch)
-	go sccRm(sflag, namespace, securityClient, ch)
-	fmt.Println(ch)
+	sccMod(sflag, namespace, securityClient)
+	sccRm(sflag, namespace, securityClient)
 
 	// execute cli command
 	// kcommand := cli.CommandFor("kubectl")
@@ -161,25 +159,25 @@ func main() {
 		kubeDeps := nodeconfig.KubeletDeps
 		kubeCfg := nodeconfig.KubeletServer.KubeletConfiguration
 		kubeFlags := s.KubeletFlags
-			k, err := kubelet.NewMainKubelet(&kubeCfg, kubeDeps, &kubeFlags.ContainerRuntimeOptions, true, kubeFlags.HostnameOverride, kubeFlags.NodeIP, kubeFlags.ProviderID)
-			checkErr(err)
-			rt := k.GetRuntime()
-			i, err := rt.ListImages()
-			checkErr(err)
-			pl := k.GetPods()
-			pl = append(pl, epod)
-			k.HandlePodAdditions(pl)
-			fmt.Println("")
-			fmt.Println(pl)
-			fmt.Println("")
-			fmt.Println(i)
+		k, err := kubelet.NewMainKubelet(&kubeCfg, kubeDeps, &kubeFlags.ContainerRuntimeOptions, true, kubeFlags.HostnameOverride, kubeFlags.NodeIP, kubeFlags.ProviderID)
+		checkErr(err)
+		rt := k.GetRuntime()
+		i, err := rt.ListImages()
+		checkErr(err)
+		pl := k.GetPods()
+		pl = append(pl, epod)
+		k.HandlePodAdditions(pl)
+		fmt.Println("")
+		fmt.Println(pl)
+		fmt.Println("")
+		fmt.Println(i)
 	*/
 	fmt.Println("\ntime until master ready...")
 	fmt.Println(n2)
 	fmt.Println("\nTotal time.")
 	fmt.Println(time.Since(n))
 
-	fmt.Println("\n")
+	fmt.Println("")
 	fmt.Println(p)
 	/*
 		os.Args = []string{"oc", "get", "pod", pod.GetName(), "--namespace=" + namespace, "--output=yaml"}

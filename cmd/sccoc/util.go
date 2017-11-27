@@ -58,6 +58,7 @@ func exportPod(kclient internalclientset.Interface, namespace string, mpath stri
 	p.Spec.DeprecatedServiceAccount = ""
 	automountSaToken := false
 	p.Spec.AutomountServiceAccountToken = &automountSaToken
+	p.Status = v1.PodStatus{}
 	for i, v := range p.Spec.Volumes {
 		if v.Secret != nil {
 			for n, c := range p.Spec.Containers {
@@ -86,7 +87,7 @@ func runKubelet(s *kubeletoptions.KubeletServer, nodeconfig *node.NodeConfig) {
 	// ?? make the change permanent, edit the file /etc/sysctl.conf and add the line to the end of the file
 	// remove serviceaccount, secrets, resourceVersion from pod yaml before processing as mirror pod
 
-	s.RunOnce = true
+	// s.RunOnce = true
 	checkErr(app.Run(s, nodeconfig.KubeletDeps))
 }
 
@@ -96,7 +97,7 @@ func mkDir(dir string) {
 	}
 }
 
-func sccMod(sflag string, namespace string, securityClient securityclientinternal.Interface, ch chan<- bool) {
+func sccMod(sflag string, namespace string, securityClient securityclientinternal.Interface) {
 	if sflag != bp.SecurityContextConstraintRestricted && sflag != bp.SecurityContextConstraintsAnyUID {
 		sa := "system:serviceaccount:" + namespace + ":" + bp.DefaultServiceAccountName
 		patch, err := json.Marshal(scc{Priority: 1})
@@ -112,10 +113,9 @@ func sccMod(sflag string, namespace string, securityClient securityclientinterna
 		o.DefaultSubjectNamespace = namespace
 		checkErr(o.AddSCC())
 	}
-	ch <- true
 }
 
-func sccRm(sflag string, namespace string, securityClient securityclientinternal.Interface, ch chan<- bool) {
+func sccRm(sflag string, namespace string, securityClient securityclientinternal.Interface) {
 	if sflag != bp.SecurityContextConstraintsAnyUID {
 		o := &policy.SCCModificationOptions{}
 		o.Out = os.Stdout
@@ -126,5 +126,4 @@ func sccRm(sflag string, namespace string, securityClient securityclientinternal
 		o.DefaultSubjectNamespace = namespace
 		checkErr(o.RemoveSCC())
 	}
-	ch <- true
 }
