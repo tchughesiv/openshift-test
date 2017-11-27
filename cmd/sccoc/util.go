@@ -48,24 +48,30 @@ func exportPod(kclient internalclientset.Interface, namespace string, mpath stri
 	externalPod := &v1.Pod{}
 	checkErr(v1.Convert_api_Pod_To_v1_Pod(pod, externalPod, nil))
 	p := *externalPod
-	podyf := mpath + "/" + p.Name + ".yaml"
+	u := string(p.ObjectMeta.UID)
+	podyf := mpath + "/" + u + ".yaml"
 	p.Status = v1.PodStatus{}
+	p.Name = u
 	p.TypeMeta.Kind = "Pod"
 	p.TypeMeta.APIVersion = "v1"
+	p.SelfLink = "/api/" + p.TypeMeta.APIVersion + "/namespaces/" + p.Namespace + "/pods/" + p.Name
 	// p.ObjectMeta = metav1.ObjectMeta{}
 	p.ObjectMeta.ResourceVersion = ""
 	p.Spec.ServiceAccountName = ""
 	p.Spec.DeprecatedServiceAccount = ""
-	automountSaToken := false
-	p.Spec.AutomountServiceAccountToken = &automountSaToken
 	p.Spec.DNSPolicy = ""
 	p.Spec.SchedulerName = ""
+	/*
+		automountSaToken := false
+		p.Spec.AutomountServiceAccountToken = &automountSaToken
+	*/
+
+	// remove secrets volume from pod & container(s)
 	for i, v := range p.Spec.Volumes {
 		if v.Secret != nil {
 			for n, c := range p.Spec.Containers {
 				for x, m := range c.VolumeMounts {
 					if m.Name == v.Name {
-						fmt.Println("\n" + m.Name + "\n")
 						p.Spec.Containers[n].VolumeMounts = append(p.Spec.Containers[n].VolumeMounts[:x], p.Spec.Containers[n].VolumeMounts[x+1:]...)
 					}
 				}
@@ -73,6 +79,7 @@ func exportPod(kclient internalclientset.Interface, namespace string, mpath stri
 			p.Spec.Volumes = append(p.Spec.Volumes[:i], p.Spec.Volumes[i+1:]...)
 		}
 	}
+
 	jpod, err := json.Marshal(p)
 	checkErr(err)
 	pyaml, err := yaml.JSONToYAML(jpod)
