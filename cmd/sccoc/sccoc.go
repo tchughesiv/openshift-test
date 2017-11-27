@@ -108,6 +108,7 @@ func main() {
 		Path: mpath,
 		FileCheckIntervalSeconds: int64(2),
 	}
+	nconfig.NodeName = ""
 	_, err = testserver.StartConfiguredMaster(mconfig)
 	checkErr(err)
 	mkDir(mpath)
