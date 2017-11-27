@@ -45,13 +45,11 @@ func exportPod(kclient internalclientset.Interface, namespace string, mpath stri
 	checkErr(err)
 
 	// mirror pod mods
-	podyf := mpath + "/" + pod.Name + "-pod.yaml"
 	externalPod := &v1.Pod{}
 	checkErr(v1.Convert_api_Pod_To_v1_Pod(pod, externalPod, nil))
 	p := *externalPod
 	p.TypeMeta.Kind = "Pod"
 	p.TypeMeta.APIVersion = "v1"
-	p.ObjectMeta.UID = ""
 	p.ObjectMeta.ResourceVersion = ""
 	p.Spec.ServiceAccountName = ""
 	p.Spec.DeprecatedServiceAccount = ""
@@ -77,6 +75,8 @@ func exportPod(kclient internalclientset.Interface, namespace string, mpath stri
 	checkErr(err)
 	pyaml, err := yaml.JSONToYAML(jpod)
 	checkErr(err)
+
+	podyf := mpath + "/" + string(p.ObjectMeta.UID) + ".yaml"
 	ioutil.WriteFile(podyf, pyaml, os.FileMode(0644))
 }
 
