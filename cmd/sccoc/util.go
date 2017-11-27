@@ -56,8 +56,8 @@ func exportPod(kclient internalclientset.Interface, namespace string, mpath stri
 	p.ObjectMeta.ResourceVersion = ""
 	p.Spec.ServiceAccountName = ""
 	p.Spec.DeprecatedServiceAccount = ""
-	//automountSaToken := false
-	//p.Spec.AutomountServiceAccountToken = &automountSaToken
+	automountSaToken := false
+	p.Spec.AutomountServiceAccountToken = &automountSaToken
 	for i, v := range p.Spec.Volumes {
 		if v.Secret != nil {
 			for n, c := range p.Spec.Containers {
@@ -86,7 +86,7 @@ func runKubelet(s *kubeletoptions.KubeletServer, nodeconfig *node.NodeConfig) {
 	// ?? make the change permanent, edit the file /etc/sysctl.conf and add the line to the end of the file
 	// remove serviceaccount, secrets, resourceVersion from pod yaml before processing as mirror pod
 
-	// s.RunOnce = true
+	s.RunOnce = true
 	checkErr(app.Run(s, nodeconfig.KubeletDeps))
 }
 
