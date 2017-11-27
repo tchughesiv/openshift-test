@@ -48,8 +48,10 @@ func exportPod(kclient internalclientset.Interface, namespace string, mpath stri
 	externalPod := &v1.Pod{}
 	checkErr(v1.Convert_api_Pod_To_v1_Pod(pod, externalPod, nil))
 	p := *externalPod
+	u := string(p.ObjectMeta.UID)
 	p.TypeMeta.Kind = "Pod"
 	p.TypeMeta.APIVersion = "v1"
+	p.ObjectMeta.Name = u
 	p.ObjectMeta.ResourceVersion = ""
 	p.Spec.ServiceAccountName = ""
 	p.Spec.DeprecatedServiceAccount = ""
@@ -76,7 +78,7 @@ func exportPod(kclient internalclientset.Interface, namespace string, mpath stri
 	pyaml, err := yaml.JSONToYAML(jpod)
 	checkErr(err)
 
-	podyf := mpath + "/" + string(p.ObjectMeta.UID) + ".yaml"
+	podyf := mpath + "/" + u + ".yaml"
 	ioutil.WriteFile(podyf, pyaml, os.FileMode(0644))
 }
 
