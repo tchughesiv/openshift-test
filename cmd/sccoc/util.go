@@ -16,7 +16,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/kubernetes/cmd/kubelet/app"
-	kubeletoptions "k8s.io/kubernetes/cmd/kubelet/app/options"
 	v1 "k8s.io/kubernetes/pkg/api/v1"
 	"k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
 	"k8s.io/kubernetes/pkg/kubelet/cadvisor"
@@ -37,7 +36,7 @@ func contains(sccopts []string, sflag string) bool {
 	return false
 }
 
-func exportPod(kclient internalclientset.Interface, namespace string, mpath string) v1.Pod {
+func exportPod(kclient internalclientset.Interface, namespace string, mpath string) {
 	fmt.Printf("\n")
 	podint := kclient.Core().Pods(namespace)
 	podl, err := podint.List(metav1.ListOptions{})
@@ -49,19 +48,23 @@ func exportPod(kclient internalclientset.Interface, namespace string, mpath stri
 	externalPod := &v1.Pod{}
 	checkErr(v1.Convert_api_Pod_To_v1_Pod(pod, externalPod, nil))
 	p := *externalPod
-	u := string(p.ObjectMeta.UID)
-	podyf := mpath + "/" + u + ".yaml"
+	podyf := mpath + "/" + p.Name + ".yaml"
+	/*
+		u := string(p.ObjectMeta.UID)
+		podyf := mpath + "/" + u + ".yaml"
+		p.Name = u
+		p.SelfLink = "/api/" + p.TypeMeta.APIVersion + "/namespaces/" + p.Namespace + "/pods/" + p.Name
+	*/
 	p.Status = v1.PodStatus{}
-	p.Name = u
 	p.TypeMeta.Kind = "Pod"
 	p.TypeMeta.APIVersion = "v1"
-	p.SelfLink = "/api/" + p.TypeMeta.APIVersion + "/namespaces/" + p.Namespace + "/pods/" + p.Name
 	// p.ObjectMeta = metav1.ObjectMeta{}
 	p.ObjectMeta.ResourceVersion = ""
 	p.Spec.ServiceAccountName = ""
 	p.Spec.DeprecatedServiceAccount = ""
 	p.Spec.DNSPolicy = ""
 	p.Spec.SchedulerName = ""
+	//p.Spec.ImagePullSecrets = []v1.LocalObjectReference{}
 	automountSaToken := false
 	p.Spec.AutomountServiceAccountToken = &automountSaToken
 
@@ -85,11 +88,9 @@ func exportPod(kclient internalclientset.Interface, namespace string, mpath stri
 	checkErr(err)
 
 	ioutil.WriteFile(podyf, pyaml, os.FileMode(0644))
-
-	return p
 }
 
-func runKubelet(s *kubeletoptions.KubeletServer, nodeconfig *node.NodeConfig, p v1.Pod) {
+func runKubelet(nodeconfig *node.NodeConfig) {
 	// requires higher max user watches for file method...
 	// sudo sysctl fs.inotify.max_user_watches=524288
 	// ?? make the change permanent, edit the file /etc/sysctl.conf and add the line to the end of the file
@@ -98,9 +99,12 @@ func runKubelet(s *kubeletoptions.KubeletServer, nodeconfig *node.NodeConfig, p 
 	// s.KeepTerminatedPodVolumes = false
 	//checkErr(app.Run(s, nodeconfig.KubeletDeps))
 
+	//_ = kubelet.KubeletDeps{}
+	s := nodeconfig.KubeletServer
 	kubeDeps := nodeconfig.KubeletDeps
-	kubeCfg := nodeconfig.KubeletServer.KubeletConfiguration
+	kubeCfg := s.KubeletConfiguration
 	kubeFlags := s.KubeletFlags
+
 	/*
 		//_, err := app.CreateAndInitKubelet(&kubeCfg, kubeDeps, &kubeFlags.ContainerRuntimeOptions, true, kubeFlags.HostnameOverride, kubeFlags.NodeIP, kubeFlags.ProviderID)
 		//checkErr(err)
@@ -129,19 +133,18 @@ func runKubelet(s *kubeletoptions.KubeletServer, nodeconfig *node.NodeConfig, p 
 	*/
 	//s.RunOnce = true
 	//checkErr(app.Run(s, nodeconfig.KubeletDeps))
+	//checkErr(app.Run(s, nil))
+
 	var err error
 	if kubeDeps.CAdvisorInterface == nil {
 		imageFsInfoProvider := cadvisor.NewImageFsInfoProvider(s.ContainerRuntime, s.RemoteRuntimeEndpoint)
 		kubeDeps.CAdvisorInterface, err = cadvisor.New(uint(s.CAdvisorPort), imageFsInfoProvider, s.RootDirectory)
 		checkErr(err)
 	}
-
-	checkErr(app.RunKubelet(&kubeFlags, &kubeCfg, kubeDeps, false, true))
-
-	fmt.Println("")
-	//fmt.Println(k.GetPods())
-	//fmt.Println("")
-	//fmt.Println(i)
+	//kubeCfg.EnableServer = false
+	// kubeDeps, err := app.UnsecuredKubeletDeps(s)
+	//checkErr(err)
+	checkErr(app.RunKubelet(&kubeFlags, &kubeCfg, kubeDeps, false, false))
 }
 
 func mkDir(dir string) {

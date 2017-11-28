@@ -19,6 +19,7 @@ import (
 	"github.com/openshift/origin/pkg/oc/cli/config"
 	testutil "github.com/openshift/origin/test/util"
 	testserver "github.com/openshift/origin/test/util/server"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kclientcmd "k8s.io/client-go/tools/clientcmd"
 
 	// install all APIs
@@ -104,16 +105,18 @@ func main() {
 	mpath := testutil.GetBaseDir() + "/manifests"
 	nconfig.PodManifestConfig = &configapi.PodManifestConfig{
 		Path: mpath,
-		FileCheckIntervalSeconds: int64(2),
+		FileCheckIntervalSeconds: int64(1),
 	}
-	// kconfig, err := testserver.StartConfiguredMaster(mconfig)
+
+	//kconfig, err := testserver.StartConfiguredMaster(mconfig)
 	kconfig, err := testserver.StartConfiguredAllInOne(mconfig, nconfig, components)
 	checkErr(err)
 	os.Setenv("KUBECONFIG", kconfig)
 	mkDir(mpath)
 	s, err := nodeoptions.Build(*nconfig)
 	checkErr(err)
-	nodeconfig, err := node.New(*nconfig, s)
+	_, err = node.New(*nconfig, s)
+	//nodeconfig, err := node.New(*nconfig, s)
 	checkErr(err)
 
 	cfg, err := config.NewOpenShiftClientConfigLoadingRules().Load()
@@ -127,22 +130,19 @@ func main() {
 
 	// wait for default serviceaccount to exist
 	checkErr(testserver.WaitForServiceAccounts(kclient, namespace, []string{bp.DefaultServiceAccountName}))
-	/*
-		_, err = kclient.Core().ServiceAccounts(namespace).Get(bp.DefaultServiceAccountName, metav1.GetOptions{})
-		for i := 0; err != nil && i < 100; i++ {
-			time.Sleep(time.Millisecond * 200)
-			_, err = kclient.Core().ServiceAccounts(namespace).Get(bp.DefaultServiceAccountName, metav1.GetOptions{})
-		}
-	*/
 	n2 := time.Since(n)
-
-	//in, out, errout := os.Stdin, os.Stdout, os.Stderr
 
 	// modify scc settings accordingly
 	securityClient, err := f.OpenshiftInternalSecurityClient()
 	checkErr(err)
 	sccMod(sflag, namespace, securityClient)
 	sccRm(sflag, namespace, securityClient)
+	si := kclient.Core().Secrets(namespace)
+	se, err := si.List(metav1.ListOptions{})
+	checkErr(err)
+	for _, z := range se.Items {
+		checkErr(si.Delete(z.Name, metav1.DeleteOptions{})
+	}
 
 	// execute cli command
 	// kcommand := cli.CommandFor("kubectl")
@@ -153,16 +153,15 @@ func main() {
 		os.Exit(1)
 	}
 
-	//p := exportPod(kclient, namespace, mpath)
-	p := exportPod(kclient, namespace, mpath)
-	// s.RunOnce = true
-	//checkErr(app.Run(s, nodeconfig.KubeletDeps))
-	runKubelet(s, nodeconfig, p)
+	// remove token from default sa before pod creation
+	exportPod(kclient, namespace, mpath)
+	//runKubelet(nodeconfig)
 
 	fmt.Println("\ntime until master ready...")
 	fmt.Println(n2)
 	fmt.Println("\nTotal time.")
 	fmt.Println(time.Since(n))
+	fmt.Println(se.Items)
 
 	/*
 		os.Args = []string{"oc", "get", "pod", pod.GetName(), "--namespace=" + namespace, "--output=yaml"}
