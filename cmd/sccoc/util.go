@@ -93,7 +93,7 @@ func runKubelet(s *kubeletoptions.KubeletServer, nodeconfig *node.NodeConfig) {
 	// remove serviceaccount, secrets, resourceVersion from pod yaml before processing as mirror pod
 
 	// s.RunOnce = true
-	s.KeepTerminatedPodVolumes = false
+	// s.KeepTerminatedPodVolumes = false
 	checkErr(app.Run(s, nodeconfig.KubeletDeps))
 }
 
