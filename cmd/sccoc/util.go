@@ -19,6 +19,7 @@ import (
 	kubeletoptions "k8s.io/kubernetes/cmd/kubelet/app/options"
 	v1 "k8s.io/kubernetes/pkg/api/v1"
 	"k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
+	"k8s.io/kubernetes/pkg/kubelet/cadvisor"
 )
 
 func checkErr(err error) {
@@ -36,7 +37,7 @@ func contains(sccopts []string, sflag string) bool {
 	return false
 }
 
-func exportPod(kclient internalclientset.Interface, namespace string, mpath string) {
+func exportPod(kclient internalclientset.Interface, namespace string, mpath string) v1.Pod {
 	fmt.Printf("\n")
 	podint := kclient.Core().Pods(namespace)
 	podl, err := podint.List(metav1.ListOptions{})
@@ -84,17 +85,63 @@ func exportPod(kclient internalclientset.Interface, namespace string, mpath stri
 	checkErr(err)
 
 	ioutil.WriteFile(podyf, pyaml, os.FileMode(0644))
+
+	return p
 }
 
-func runKubelet(s *kubeletoptions.KubeletServer, nodeconfig *node.NodeConfig) {
+func runKubelet(s *kubeletoptions.KubeletServer, nodeconfig *node.NodeConfig, p v1.Pod) {
 	// requires higher max user watches for file method...
 	// sudo sysctl fs.inotify.max_user_watches=524288
 	// ?? make the change permanent, edit the file /etc/sysctl.conf and add the line to the end of the file
 	// remove serviceaccount, secrets, resourceVersion from pod yaml before processing as mirror pod
 
-	// s.RunOnce = true
 	// s.KeepTerminatedPodVolumes = false
-	checkErr(app.Run(s, nodeconfig.KubeletDeps))
+	//checkErr(app.Run(s, nodeconfig.KubeletDeps))
+
+	kubeDeps := nodeconfig.KubeletDeps
+	kubeCfg := nodeconfig.KubeletServer.KubeletConfiguration
+	kubeFlags := s.KubeletFlags
+	/*
+		//_, err := app.CreateAndInitKubelet(&kubeCfg, kubeDeps, &kubeFlags.ContainerRuntimeOptions, true, kubeFlags.HostnameOverride, kubeFlags.NodeIP, kubeFlags.ProviderID)
+		//checkErr(err)
+		k, err := kubelet.NewMainKubelet(&kubeCfg, kubeDeps, &kubeFlags.ContainerRuntimeOptions, true, kubeFlags.HostnameOverride, kubeFlags.NodeIP, kubeFlags.ProviderID)
+		checkErr(err)
+
+		rt := k.GetRuntime()
+		i, err := rt.ListImages()
+		checkErr(err)
+		pl, err := rt.GetPods(true)
+		checkErr(err)
+		var pln []*v1.Pod
+		for _, t := range pl {
+			pln = append(pln, t.ToAPIPod())
+		}
+
+		pln = append(pln, &p)
+		k.HandlePodRemoves(pln)
+		k.HandlePodAdditions(pln)
+		k.HandlePodUpdates(pln)
+		k.HandlePodReconcile(pln)
+		k.HandlePodSyncs(pln)
+		k.HandlePodCleanups()
+		// ch := ktypes.PodUpdate{}
+		// k.RunOnce()
+	*/
+	//s.RunOnce = true
+	//checkErr(app.Run(s, nodeconfig.KubeletDeps))
+	var err error
+	if kubeDeps.CAdvisorInterface == nil {
+		imageFsInfoProvider := cadvisor.NewImageFsInfoProvider(s.ContainerRuntime, s.RemoteRuntimeEndpoint)
+		kubeDeps.CAdvisorInterface, err = cadvisor.New(uint(s.CAdvisorPort), imageFsInfoProvider, s.RootDirectory)
+		checkErr(err)
+	}
+
+	checkErr(app.RunKubelet(&kubeFlags, &kubeCfg, kubeDeps, false, true))
+
+	fmt.Println("")
+	//fmt.Println(k.GetPods())
+	//fmt.Println("")
+	//fmt.Println(i)
 }
 
 func mkDir(dir string) {

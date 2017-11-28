@@ -19,7 +19,6 @@ import (
 	"github.com/openshift/origin/pkg/oc/cli/config"
 	testutil "github.com/openshift/origin/test/util"
 	testserver "github.com/openshift/origin/test/util/server"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kclientcmd "k8s.io/client-go/tools/clientcmd"
 
 	// install all APIs
@@ -98,7 +97,7 @@ func main() {
 
 	// How can suppress the "startup" logs????
 	//os.Setenv("KUBELET_NETWORK_ARGS", "")
-	mconfig, nconfig, _, err := testserver.DefaultAllInOneOptions()
+	mconfig, nconfig, components, err := testserver.DefaultAllInOneOptions()
 	checkErr(err)
 
 	mkDir(d)
@@ -107,14 +106,13 @@ func main() {
 		Path: mpath,
 		FileCheckIntervalSeconds: int64(2),
 	}
-	kconfig, err := testserver.StartConfiguredMaster(mconfig)
+	// kconfig, err := testserver.StartConfiguredMaster(mconfig)
+	kconfig, err := testserver.StartConfiguredAllInOne(mconfig, nconfig, components)
 	checkErr(err)
 	os.Setenv("KUBECONFIG", kconfig)
 	mkDir(mpath)
-
 	s, err := nodeoptions.Build(*nconfig)
 	checkErr(err)
-	// s.ClusterDNS = []string{mconfig.DNSConfig.BindAddress}
 	nodeconfig, err := node.New(*nconfig, s)
 	checkErr(err)
 
@@ -128,11 +126,14 @@ func main() {
 	checkErr(err)
 
 	// wait for default serviceaccount to exist
-	_, err = kclient.Core().ServiceAccounts(namespace).Get(bp.DefaultServiceAccountName, metav1.GetOptions{})
-	for i := 0; err != nil && i < 100; i++ {
-		time.Sleep(time.Millisecond * 200)
+	checkErr(testserver.WaitForServiceAccounts(kclient, namespace, []string{bp.DefaultServiceAccountName}))
+	/*
 		_, err = kclient.Core().ServiceAccounts(namespace).Get(bp.DefaultServiceAccountName, metav1.GetOptions{})
-	}
+		for i := 0; err != nil && i < 100; i++ {
+			time.Sleep(time.Millisecond * 200)
+			_, err = kclient.Core().ServiceAccounts(namespace).Get(bp.DefaultServiceAccountName, metav1.GetOptions{})
+		}
+	*/
 	n2 := time.Since(n)
 
 	//in, out, errout := os.Stdin, os.Stdout, os.Stderr
@@ -152,26 +153,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	exportPod(kclient, namespace, mpath)
-	runKubelet(s, nodeconfig)
+	//p := exportPod(kclient, namespace, mpath)
+	p := exportPod(kclient, namespace, mpath)
+	// s.RunOnce = true
+	//checkErr(app.Run(s, nodeconfig.KubeletDeps))
+	runKubelet(s, nodeconfig, p)
 
-	/*
-		kubeDeps := nodeconfig.KubeletDeps
-		kubeCfg := nodeconfig.KubeletServer.KubeletConfiguration
-		kubeFlags := s.KubeletFlags
-		k, err := kubelet.NewMainKubelet(&kubeCfg, kubeDeps, &kubeFlags.ContainerRuntimeOptions, true, kubeFlags.HostnameOverride, kubeFlags.NodeIP, kubeFlags.ProviderID)
-		checkErr(err)
-		rt := k.GetRuntime()
-		i, err := rt.ListImages()
-		checkErr(err)
-		pl := k.GetPods()
-		// pl = append(pl, epod)
-		// k.HandlePodAdditions(pl)
-		fmt.Println("")
-		fmt.Println(pl)
-		fmt.Println("")
-		fmt.Println(i)
-	*/
 	fmt.Println("\ntime until master ready...")
 	fmt.Println(n2)
 	fmt.Println("\nTotal time.")
