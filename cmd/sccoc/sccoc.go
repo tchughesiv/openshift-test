@@ -141,7 +141,7 @@ func main() {
 	se, err := si.List(metav1.ListOptions{})
 	checkErr(err)
 	for _, z := range se.Items {
-		checkErr(si.Delete(z.Name, metav1.DeleteOptions{}),
+		checkErr(si.Delete(z.Name, metav1.DeleteOptions{}))
 	}
 
 	// execute cli command
