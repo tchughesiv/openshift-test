@@ -19,7 +19,6 @@ import (
 	"github.com/openshift/origin/pkg/oc/cli/config"
 	testutil "github.com/openshift/origin/test/util"
 	testserver "github.com/openshift/origin/test/util/server"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kclientcmd "k8s.io/client-go/tools/clientcmd"
 
 	// install all APIs
@@ -115,8 +114,8 @@ func main() {
 	mkDir(mpath)
 	s, err := nodeoptions.Build(*nconfig)
 	checkErr(err)
-	_, err = node.New(*nconfig, s)
-	//nodeconfig, err := node.New(*nconfig, s)
+	//_, err = node.New(*nconfig, s)
+	nodeconfig, err := node.New(*nconfig, s)
 	checkErr(err)
 
 	cfg, err := config.NewOpenShiftClientConfigLoadingRules().Load()
@@ -137,12 +136,36 @@ func main() {
 	checkErr(err)
 	sccMod(sflag, namespace, securityClient)
 	sccRm(sflag, namespace, securityClient)
-	si := kclient.Core().Secrets(namespace)
-	se, err := si.List(metav1.ListOptions{})
-	checkErr(err)
-	for _, z := range se.Items {
-		checkErr(si.Delete(z.Name, &metav1.DeleteOptions{}))
-	}
+
+	// delete secrets before pod creation
+	/*
+		si := kclient.Core().Secrets(namespace)
+		se, err := si.List(metav1.ListOptions{})
+		checkErr(err)
+		zero := int64(0)
+		for _, z := range se.Items {
+			fmt.Println(z.Name)
+			checkErr(si.Delete(z.Name, &metav1.DeleteOptions{GracePeriodSeconds: &zero}))
+		}
+		checkErr(si.DeleteCollection(&metav1.DeleteOptions{GracePeriodSeconds: &zero}, metav1.ListOptions{}))
+		se, err = si.List(metav1.ListOptions{})
+		checkErr(err)
+		for _, y := range se.Items {
+			fmt.Println(y.Name)
+			checkErr(si.Delete(y.Name, &metav1.DeleteOptions{GracePeriodSeconds: &zero}))
+		}
+		checkErr(si.DeleteCollection(&metav1.DeleteOptions{GracePeriodSeconds: &zero}, metav1.ListOptions{}))
+		se, err = si.List(metav1.ListOptions{})
+		checkErr(err)
+	*/
+
+	/*
+		os.Args = []string{"oc", "delete", "secrets", "--all"}
+		command := cli.CommandFor("oc")
+		if err := command.Execute(); err != nil {
+			os.Exit(1)
+		}
+	*/
 
 	// execute cli command
 	// kcommand := cli.CommandFor("kubectl")
@@ -154,14 +177,13 @@ func main() {
 	}
 
 	// remove token from default sa before pod creation
-	exportPod(kclient, namespace, mpath)
-	//runKubelet(nodeconfig)
+	p := exportPod(kclient, namespace, mpath)
+	runKubelet(nodeconfig, p)
 
 	fmt.Println("\ntime until master ready...")
 	fmt.Println(n2)
 	fmt.Println("\nTotal time.")
 	fmt.Println(time.Since(n))
-	fmt.Println(se.Items)
 
 	/*
 		os.Args = []string{"oc", "get", "pod", pod.GetName(), "--namespace=" + namespace, "--output=yaml"}

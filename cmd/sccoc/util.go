@@ -18,7 +18,6 @@ import (
 	"k8s.io/kubernetes/cmd/kubelet/app"
 	v1 "k8s.io/kubernetes/pkg/api/v1"
 	"k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
-	"k8s.io/kubernetes/pkg/kubelet/cadvisor"
 )
 
 func checkErr(err error) {
@@ -36,7 +35,7 @@ func contains(sccopts []string, sflag string) bool {
 	return false
 }
 
-func exportPod(kclient internalclientset.Interface, namespace string, mpath string) {
+func exportPod(kclient internalclientset.Interface, namespace string, mpath string) v1.Pod {
 	fmt.Printf("\n")
 	podint := kclient.Core().Pods(namespace)
 	podl, err := podint.List(metav1.ListOptions{})
@@ -88,24 +87,28 @@ func exportPod(kclient internalclientset.Interface, namespace string, mpath stri
 	checkErr(err)
 
 	ioutil.WriteFile(podyf, pyaml, os.FileMode(0644))
+
+	return p
 }
 
-func runKubelet(nodeconfig *node.NodeConfig) {
+func runKubelet(nodeconfig *node.NodeConfig, p v1.Pod) {
 	// requires higher max user watches for file method...
 	// sudo sysctl fs.inotify.max_user_watches=524288
 	// ?? make the change permanent, edit the file /etc/sysctl.conf and add the line to the end of the file
 	// remove serviceaccount, secrets, resourceVersion from pod yaml before processing as mirror pod
 
 	// s.KeepTerminatedPodVolumes = false
-	//checkErr(app.Run(s, nodeconfig.KubeletDeps))
-
-	//_ = kubelet.KubeletDeps{}
 	s := nodeconfig.KubeletServer
+	s.RunOnce = true
 	kubeDeps := nodeconfig.KubeletDeps
-	kubeCfg := s.KubeletConfiguration
-	kubeFlags := s.KubeletFlags
+	checkErr(app.Run(s, nodeconfig.KubeletDeps))
 
+	//kubeDeps := kubelet.KubeletDeps{}
 	/*
+		//kubeDeps, err := app.UnsecuredKubeletDeps(s)
+		kubeCfg := s.KubeletConfiguration
+		kubeFlags := s.KubeletFlags
+
 		//_, err := app.CreateAndInitKubelet(&kubeCfg, kubeDeps, &kubeFlags.ContainerRuntimeOptions, true, kubeFlags.HostnameOverride, kubeFlags.NodeIP, kubeFlags.ProviderID)
 		//checkErr(err)
 		k, err := kubelet.NewMainKubelet(&kubeCfg, kubeDeps, &kubeFlags.ContainerRuntimeOptions, true, kubeFlags.HostnameOverride, kubeFlags.NodeIP, kubeFlags.ProviderID)
@@ -130,21 +133,24 @@ func runKubelet(nodeconfig *node.NodeConfig) {
 		k.HandlePodCleanups()
 		// ch := ktypes.PodUpdate{}
 		// k.RunOnce()
-	*/
-	//s.RunOnce = true
-	//checkErr(app.Run(s, nodeconfig.KubeletDeps))
-	//checkErr(app.Run(s, nil))
 
-	var err error
-	if kubeDeps.CAdvisorInterface == nil {
-		imageFsInfoProvider := cadvisor.NewImageFsInfoProvider(s.ContainerRuntime, s.RemoteRuntimeEndpoint)
-		kubeDeps.CAdvisorInterface, err = cadvisor.New(uint(s.CAdvisorPort), imageFsInfoProvider, s.RootDirectory)
-		checkErr(err)
-	}
-	//kubeCfg.EnableServer = false
-	// kubeDeps, err := app.UnsecuredKubeletDeps(s)
+		//checkErr(app.Run(s, nodeconfig.KubeletDeps))
+		checkErr(app.Run(s, nil))
+	*/
+	fmt.Println(kubeDeps.ContainerManager)
+	pm := kubeDeps.ContainerManager.NewPodContainerManager()
+	checkErr(pm.EnsureExists(&p))
+
+	/*
+		var err error
+		if kubeDeps.CAdvisorInterface == nil {
+			imageFsInfoProvider := cadvisor.NewImageFsInfoProvider(s.ContainerRuntime, s.RemoteRuntimeEndpoint)
+			kubeDeps.CAdvisorInterface, err = cadvisor.New(uint(s.CAdvisorPort), imageFsInfoProvider, s.RootDirectory)
+			checkErr(err)
+		}
+	*/
 	//checkErr(err)
-	checkErr(app.RunKubelet(&kubeFlags, &kubeCfg, kubeDeps, false, false))
+	//checkErr(app.RunKubelet(&kubeFlags, &kubeCfg, kubeDeps, false, true))
 }
 
 func mkDir(dir string) {
