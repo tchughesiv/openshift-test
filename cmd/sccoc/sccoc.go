@@ -157,7 +157,7 @@ func main() {
 	// remove secrets from pod before kubelet runs
 	p := recreatePod(kclient, namespace, mpath)
 	runKubelet(nodeconfig, p)
-	checkErr(testserver.StartConfiguredNode(nconfig, components))
+	//checkErr(testserver.StartConfiguredNode(nconfig, components))
 
 	fmt.Println("\ntime until master ready...")
 	fmt.Println(n2)
