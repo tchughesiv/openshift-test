@@ -111,7 +111,8 @@ func main() {
 	//kconfig, err := testserver.StartConfiguredAllInOne(mconfig, nconfig, components)
 	checkErr(err)
 	os.Setenv("KUBECONFIG", kconfig)
-	mkDir(mpath)
+	//mkDir(mpath)
+
 	s, err := nodeoptions.Build(*nconfig)
 	checkErr(err)
 	//_, err = node.New(*nconfig, s)
@@ -156,18 +157,12 @@ func main() {
 
 	// remove secrets from pod before kubelet runs
 	p := recreatePod(kclient, namespace, mpath)
-	runKubelet(nodeconfig, p)
-	//checkErr(testserver.StartConfiguredNode(nconfig, components))
 
 	fmt.Println("\ntime until master ready...")
 	fmt.Println(n2)
 	fmt.Println("\nTotal time.")
 	fmt.Println(time.Since(n))
 
-	/*
-		os.Args = []string{"oc", "get", "pod", pod.GetName(), "--namespace=" + namespace, "--output=yaml"}
-		if err := kcommand.Execute(); err != nil {
-			os.Exit(1)
-		}
-	*/
+	runKubelet(nodeconfig, p)
+	//checkErr(testserver.StartConfiguredNode(nconfig, components))
 }

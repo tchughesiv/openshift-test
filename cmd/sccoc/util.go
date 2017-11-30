@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"os"
 
@@ -51,16 +50,19 @@ func recreatePod(kclient internalclientset.Interface, namespace string, mpath st
 	checkErr(podint.Delete(pod.Name, &do))
 
 	// recreate modified pod w/o secret volume(s)
-	n, err := podint.Create(pod)
+	//n, err := podint.Create(pod)
+	_, err = podint.Create(pod)
 	checkErr(err)
 
-	jp, err := json.Marshal(n)
-	checkErr(err)
+	/*
+		jp, err := json.Marshal(n)
+		checkErr(err)
 
-	fmt.Printf("\n")
-	fmt.Println(string(jp))
+		fmt.Printf("\n")
+		fmt.Println(string(jp))
+	*/
 
-	// mirror pod mods
+	// convert pod mods
 	externalPod := &v1.Pod{}
 	checkErr(v1.Convert_api_Pod_To_v1_Pod(pod, externalPod, nil))
 	p := *externalPod
@@ -89,7 +91,7 @@ func recreatePod(kclient internalclientset.Interface, namespace string, mpath st
 }
 
 func runKubelet(nodeconfig *node.NodeConfig, p v1.Pod) {
-	// requires higher max user watches for file method...
+	// requires higher max user watches for file method... not using right now
 	// sudo sysctl fs.inotify.max_user_watches=524288
 	// ?? make the change permanent, edit the file /etc/sysctl.conf and add the line to the end of the file
 	// remove serviceaccount, secrets, resourceVersion from pod yaml before processing as mirror pod
@@ -134,11 +136,12 @@ func runKubelet(nodeconfig *node.NodeConfig, p v1.Pod) {
 	kubeDeps := nodeconfig.KubeletDeps
 	checkErr(app.Run(s, kubeDeps))
 
-	fmt.Println(kubeDeps.ContainerManager.Status())
-	pm := kubeDeps.ContainerManager.NewPodContainerManager()
-	checkErr(pm.EnsureExists(&p))
-	fmt.Println(pm.GetAllPodsFromCgroups())
-
+	/*
+		fmt.Println(kubeDeps.ContainerManager.Status())
+		pm := kubeDeps.ContainerManager.NewPodContainerManager()
+		checkErr(pm.EnsureExists(&p))
+		fmt.Println(pm.GetAllPodsFromCgroups())
+	*/
 	//checkErr(app.RunKubelet(&kubeFlags, &kubeCfg, kubeDeps, false, true))
 }
 
