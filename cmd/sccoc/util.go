@@ -3,11 +3,9 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 
-	"github.com/ghodss/yaml"
 	authorizationapi "github.com/openshift/origin/pkg/authorization/apis/authorization"
 	bp "github.com/openshift/origin/pkg/cmd/server/bootstrappolicy"
 	"github.com/openshift/origin/pkg/cmd/server/kubernetes/node"
@@ -46,27 +44,14 @@ func exportPod(kclient internalclientset.Interface, namespace string, mpath stri
 	pod, err := podint.Get(podl.Items[0].GetName(), metav1.GetOptions{})
 	checkErr(err)
 
-	pn := *pod
+	// modify pod
+	modPod(pod)
 
 	// delete pod
 	checkErr(podint.Delete(pod.Name, &do))
 
-	pn.Status = api.PodStatus{}
-	//pn.UID = ""
-	pn.ObjectMeta.ResourceVersion = ""
-	pn.Spec.ServiceAccountName = ""
-	//pod.Spec.DeprecatedServiceAccount = ""
-	//pn.Spec.SchedulerName = ""
-	//pod.Spec.ImagePullSecrets = []v1.LocalObjectReference{}
-	automountSaToken := false
-	pn.Spec.AutomountServiceAccountToken = &automountSaToken
-	//pn.Spec.DNSPolicy = api.DNSDefault
-
-	// remove secrets volume from pod & container(s)
-	rmSV(&pn)
-
-	// recreate pod
-	n, err := podint.Create(&pn)
+	// recreate modified pod w/o secret volume(s)
+	n, err := podint.Create(pod)
 	checkErr(err)
 
 	jp, err := json.Marshal(n)
@@ -79,25 +64,27 @@ func exportPod(kclient internalclientset.Interface, namespace string, mpath stri
 	externalPod := &v1.Pod{}
 	checkErr(v1.Convert_api_Pod_To_v1_Pod(pod, externalPod, nil))
 	p := *externalPod
-	podyf := mpath + "/" + p.Name + ".yaml"
+
 	/*
-		u := string(p.ObjectMeta.UID)
-		podyf := mpath + "/" + u + ".yaml"
-		p.Name = u
-		p.SelfLink = "/api/" + p.TypeMeta.APIVersion + "/namespaces/" + p.Namespace + "/pods/" + p.Name
+		podyf := mpath + "/" + p.Name + ".yaml"
+
+		//	u := string(p.ObjectMeta.UID)
+		//	podyf := mpath + "/" + u + ".yaml"
+		//	p.Name = u
+		//	p.SelfLink = "/api/" + p.TypeMeta.APIVersion + "/namespaces/" + p.Namespace + "/pods/" + p.Name
+
+		p.Status = v1.PodStatus{}
+		p.TypeMeta.Kind = "Pod"
+		p.TypeMeta.APIVersion = "v1"
+		p.Spec.DeprecatedServiceAccount = ""
+
+		jpod, err := json.Marshal(p)
+		checkErr(err)
+		pyaml, err := yaml.JSONToYAML(jpod)
+		checkErr(err)
+
+		ioutil.WriteFile(podyf, pyaml, os.FileMode(0644))
 	*/
-	p.Status = v1.PodStatus{}
-	p.TypeMeta.Kind = "Pod"
-	p.TypeMeta.APIVersion = "v1"
-	p.Spec.DeprecatedServiceAccount = ""
-
-	jpod, err := json.Marshal(p)
-	checkErr(err)
-	pyaml, err := yaml.JSONToYAML(jpod)
-	checkErr(err)
-
-	ioutil.WriteFile(podyf, pyaml, os.FileMode(0644))
-
 	return p
 }
 
@@ -107,13 +94,6 @@ func runKubelet(nodeconfig *node.NodeConfig, p v1.Pod) {
 	// ?? make the change permanent, edit the file /etc/sysctl.conf and add the line to the end of the file
 	// remove serviceaccount, secrets, resourceVersion from pod yaml before processing as mirror pod
 
-	// s.KeepTerminatedPodVolumes = false
-	s := nodeconfig.KubeletServer
-	//s.RunOnce = true
-	kubeDeps := nodeconfig.KubeletDeps
-	checkErr(app.Run(s, kubeDeps))
-
-	//kubeDeps := kubelet.KubeletDeps{}
 	/*
 		//kubeDeps, err := app.UnsecuredKubeletDeps(s)
 		kubeCfg := s.KubeletConfiguration
@@ -148,20 +128,17 @@ func runKubelet(nodeconfig *node.NodeConfig, p v1.Pod) {
 		checkErr(app.Run(s, nil))
 	*/
 
+	// s.KeepTerminatedPodVolumes = false
+	s := nodeconfig.KubeletServer
+	//s.RunOnce = true
+	kubeDeps := nodeconfig.KubeletDeps
+	checkErr(app.Run(s, kubeDeps))
+
 	fmt.Println(kubeDeps.ContainerManager.Status())
 	pm := kubeDeps.ContainerManager.NewPodContainerManager()
 	checkErr(pm.EnsureExists(&p))
 	fmt.Println(pm.GetAllPodsFromCgroups())
 
-	/*
-		var err error
-		if kubeDeps.CAdvisorInterface == nil {
-			imageFsInfoProvider := cadvisor.NewImageFsInfoProvider(s.ContainerRuntime, s.RemoteRuntimeEndpoint)
-			kubeDeps.CAdvisorInterface, err = cadvisor.New(uint(s.CAdvisorPort), imageFsInfoProvider, s.RootDirectory)
-			checkErr(err)
-		}
-	*/
-	//checkErr(err)
 	//checkErr(app.RunKubelet(&kubeFlags, &kubeCfg, kubeDeps, false, true))
 }
 
@@ -200,6 +177,22 @@ func sccRm(sflag string, namespace string, securityClient securityclientinternal
 		o.DefaultSubjectNamespace = namespace
 		checkErr(o.RemoveSCC())
 	}
+}
+
+func modPod(p *api.Pod) {
+	p.Status = api.PodStatus{}
+	//pn.UID = ""
+	p.ObjectMeta.ResourceVersion = ""
+	p.Spec.ServiceAccountName = ""
+	//pod.Spec.DeprecatedServiceAccount = ""
+	//pn.Spec.SchedulerName = ""
+	//pod.Spec.ImagePullSecrets = []v1.LocalObjectReference{}
+	automountSaToken := false
+	p.Spec.AutomountServiceAccountToken = &automountSaToken
+	//pn.Spec.DNSPolicy = api.DNSDefault
+
+	// remove secrets volume from pod & container(s)
+	rmSV(p)
 }
 
 func rmSV(p *api.Pod) {
