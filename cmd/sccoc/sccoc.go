@@ -96,7 +96,7 @@ func main() {
 
 	// How can suppress the "startup" logs????
 	//os.Setenv("KUBELET_NETWORK_ARGS", "")
-	mconfig, nconfig, components, err := testserver.DefaultAllInOneOptions()
+	mconfig, nconfig, _, err := testserver.DefaultAllInOneOptions()
 	checkErr(err)
 
 	mkDir(d)
