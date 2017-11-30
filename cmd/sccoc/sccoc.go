@@ -130,7 +130,6 @@ func main() {
 
 	// wait for default serviceaccount to exist
 	checkErr(testserver.WaitForServiceAccounts(kclient, namespace, []string{bp.DefaultServiceAccountName}))
-	n2 := time.Since(n)
 
 	// modify scc settings before pod creation
 	securityClient, err := f.OpenshiftInternalSecurityClient()
@@ -158,9 +157,7 @@ func main() {
 	// remove secrets from pod before kubelet runs
 	p := recreatePod(kclient, namespace, mpath)
 
-	fmt.Println("\ntime until master ready...")
-	fmt.Println(n2)
-	fmt.Println("\nTotal time.")
+	fmt.Println("\nTotal start time:")
 	fmt.Println(time.Since(n))
 
 	runKubelet(nodeconfig, p)
