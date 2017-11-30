@@ -37,27 +37,42 @@ func contains(sccopts []string, sflag string) bool {
 }
 
 func exportPod(kclient internalclientset.Interface, namespace string, mpath string) v1.Pod {
-	fmt.Printf("\n")
+	zero := int64(0)
+	do := metav1.DeleteOptions{GracePeriodSeconds: &zero}
+
 	podint := kclient.Core().Pods(namespace)
 	podl, err := podint.List(metav1.ListOptions{})
 	checkErr(err)
 	pod, err := podint.Get(podl.Items[0].GetName(), metav1.GetOptions{})
 	checkErr(err)
 
-	pod.ObjectMeta.ResourceVersion = ""
-	pod.Spec.ServiceAccountName = ""
+	pn := *pod
+
+	// delete pod
+	checkErr(podint.Delete(pod.Name, &do))
+
+	pn.UID = ""
+	pn.ObjectMeta.ResourceVersion = ""
+	pn.Spec.ServiceAccountName = ""
 	//pod.Spec.DeprecatedServiceAccount = ""
-	pod.Spec.DNSPolicy = ""
-	pod.Spec.SchedulerName = ""
+	pn.Spec.DNSPolicy = ""
+	pn.Spec.SchedulerName = ""
 	//pod.Spec.ImagePullSecrets = []v1.LocalObjectReference{}
 	automountSaToken := false
-	pod.Spec.AutomountServiceAccountToken = &automountSaToken
+	pn.Spec.AutomountServiceAccountToken = &automountSaToken
+	pn.Spec.DNSPolicy = api.DNSDefault
 
 	// remove secrets volume from pod & container(s)
-	rmSV(pod)
+	rmSV(&pn)
 
-	jp, err := json.Marshal(pod)
+	// recreate pod
+	n, err := podint.Create(&pn)
 	checkErr(err)
+
+	jp, err := json.Marshal(n)
+	checkErr(err)
+
+	fmt.Printf("\n")
 	fmt.Println(string(jp))
 
 	// mirror pod mods
@@ -94,7 +109,7 @@ func runKubelet(nodeconfig *node.NodeConfig, p v1.Pod) {
 
 	// s.KeepTerminatedPodVolumes = false
 	s := nodeconfig.KubeletServer
-	s.RunOnce = true
+	//s.RunOnce = true
 	kubeDeps := nodeconfig.KubeletDeps
 	checkErr(app.Run(s, kubeDeps))
 

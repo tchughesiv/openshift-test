@@ -96,7 +96,7 @@ func main() {
 
 	// How can suppress the "startup" logs????
 	//os.Setenv("KUBELET_NETWORK_ARGS", "")
-	mconfig, nconfig, components, err := testserver.DefaultAllInOneOptions()
+	mconfig, nconfig, _, err := testserver.DefaultAllInOneOptions()
 	checkErr(err)
 
 	mkDir(d)
@@ -107,8 +107,8 @@ func main() {
 			FileCheckIntervalSeconds: int64(1),
 		}
 	*/
-	//kconfig, err := testserver.StartConfiguredMaster(mconfig)
-	kconfig, err := testserver.StartConfiguredAllInOne(mconfig, nconfig, components)
+	kconfig, err := testserver.StartConfiguredMaster(mconfig)
+	//kconfig, err := testserver.StartConfiguredAllInOne(mconfig, nconfig, components)
 	checkErr(err)
 	os.Setenv("KUBECONFIG", kconfig)
 	mkDir(mpath)
