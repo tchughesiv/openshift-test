@@ -131,7 +131,7 @@ func main() {
 	checkErr(testserver.WaitForServiceAccounts(kclient, namespace, []string{bp.DefaultServiceAccountName}))
 	n2 := time.Since(n)
 
-	// modify scc settings accordingly
+	// modify scc settings before pod creation
 	securityClient, err := f.OpenshiftInternalSecurityClient()
 	checkErr(err)
 	sccMod(sflag, namespace, securityClient)
