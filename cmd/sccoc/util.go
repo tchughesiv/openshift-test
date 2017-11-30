@@ -16,6 +16,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/kubernetes/cmd/kubelet/app"
+	"k8s.io/kubernetes/pkg/api"
 	v1 "k8s.io/kubernetes/pkg/api/v1"
 	"k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
 )
@@ -43,6 +44,22 @@ func exportPod(kclient internalclientset.Interface, namespace string, mpath stri
 	pod, err := podint.Get(podl.Items[0].GetName(), metav1.GetOptions{})
 	checkErr(err)
 
+	pod.ObjectMeta.ResourceVersion = ""
+	pod.Spec.ServiceAccountName = ""
+	//pod.Spec.DeprecatedServiceAccount = ""
+	pod.Spec.DNSPolicy = ""
+	pod.Spec.SchedulerName = ""
+	//pod.Spec.ImagePullSecrets = []v1.LocalObjectReference{}
+	automountSaToken := false
+	pod.Spec.AutomountServiceAccountToken = &automountSaToken
+
+	// remove secrets volume from pod & container(s)
+	rmSV(pod)
+
+	jp, err := json.Marshal(pod)
+	checkErr(err)
+	fmt.Println(string(jp))
+
 	// mirror pod mods
 	externalPod := &v1.Pod{}
 	checkErr(v1.Convert_api_Pod_To_v1_Pod(pod, externalPod, nil))
@@ -57,29 +74,7 @@ func exportPod(kclient internalclientset.Interface, namespace string, mpath stri
 	p.Status = v1.PodStatus{}
 	p.TypeMeta.Kind = "Pod"
 	p.TypeMeta.APIVersion = "v1"
-	// p.ObjectMeta = metav1.ObjectMeta{}
-	p.ObjectMeta.ResourceVersion = ""
-	p.Spec.ServiceAccountName = ""
 	p.Spec.DeprecatedServiceAccount = ""
-	p.Spec.DNSPolicy = ""
-	p.Spec.SchedulerName = ""
-	//p.Spec.ImagePullSecrets = []v1.LocalObjectReference{}
-	automountSaToken := false
-	p.Spec.AutomountServiceAccountToken = &automountSaToken
-
-	// remove secrets volume from pod & container(s)
-	for i, v := range p.Spec.Volumes {
-		if v.Secret != nil {
-			for n, c := range p.Spec.Containers {
-				for x, m := range c.VolumeMounts {
-					if m.Name == v.Name {
-						p.Spec.Containers[n].VolumeMounts = append(p.Spec.Containers[n].VolumeMounts[:x], p.Spec.Containers[n].VolumeMounts[x+1:]...)
-					}
-				}
-			}
-			p.Spec.Volumes = append(p.Spec.Volumes[:i], p.Spec.Volumes[i+1:]...)
-		}
-	}
 
 	jpod, err := json.Marshal(p)
 	checkErr(err)
@@ -101,7 +96,7 @@ func runKubelet(nodeconfig *node.NodeConfig, p v1.Pod) {
 	s := nodeconfig.KubeletServer
 	s.RunOnce = true
 	kubeDeps := nodeconfig.KubeletDeps
-	checkErr(app.Run(s, nodeconfig.KubeletDeps))
+	checkErr(app.Run(s, kubeDeps))
 
 	//kubeDeps := kubelet.KubeletDeps{}
 	/*
@@ -137,9 +132,11 @@ func runKubelet(nodeconfig *node.NodeConfig, p v1.Pod) {
 		//checkErr(app.Run(s, nodeconfig.KubeletDeps))
 		checkErr(app.Run(s, nil))
 	*/
-	fmt.Println(kubeDeps.ContainerManager)
+
+	fmt.Println(kubeDeps.ContainerManager.Status())
 	pm := kubeDeps.ContainerManager.NewPodContainerManager()
 	checkErr(pm.EnsureExists(&p))
+	fmt.Println(pm.GetAllPodsFromCgroups())
 
 	/*
 		var err error
@@ -187,5 +184,20 @@ func sccRm(sflag string, namespace string, securityClient securityclientinternal
 		o.SCCInterface = securityClient.Security().SecurityContextConstraints()
 		o.DefaultSubjectNamespace = namespace
 		checkErr(o.RemoveSCC())
+	}
+}
+
+func rmSV(p *api.Pod) {
+	for i, v := range p.Spec.Volumes {
+		if v.Secret != nil {
+			for n, c := range p.Spec.Containers {
+				for x, m := range c.VolumeMounts {
+					if m.Name == v.Name {
+						p.Spec.Containers[n].VolumeMounts = append(p.Spec.Containers[n].VolumeMounts[:x], p.Spec.Containers[n].VolumeMounts[x+1:]...)
+					}
+				}
+			}
+			p.Spec.Volumes = append(p.Spec.Volumes[:i], p.Spec.Volumes[i+1:]...)
+		}
 	}
 }

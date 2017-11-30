@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	configapi "github.com/openshift/origin/pkg/cmd/server/api"
 	bp "github.com/openshift/origin/pkg/cmd/server/bootstrappolicy"
 	"github.com/openshift/origin/pkg/cmd/server/kubernetes/node"
 	nodeoptions "github.com/openshift/origin/pkg/cmd/server/kubernetes/node/options"
@@ -102,11 +101,12 @@ func main() {
 
 	mkDir(d)
 	mpath := testutil.GetBaseDir() + "/manifests"
-	nconfig.PodManifestConfig = &configapi.PodManifestConfig{
-		Path: mpath,
-		FileCheckIntervalSeconds: int64(1),
-	}
-
+	/*
+		nconfig.PodManifestConfig = &configapi.PodManifestConfig{
+			Path: mpath,
+			FileCheckIntervalSeconds: int64(1),
+		}
+	*/
 	//kconfig, err := testserver.StartConfiguredMaster(mconfig)
 	kconfig, err := testserver.StartConfiguredAllInOne(mconfig, nconfig, components)
 	checkErr(err)
