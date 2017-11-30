@@ -51,16 +51,16 @@ func exportPod(kclient internalclientset.Interface, namespace string, mpath stri
 	// delete pod
 	checkErr(podint.Delete(pod.Name, &do))
 
-	pn.UID = ""
+	pn.Status = api.PodStatus{}
+	//pn.UID = ""
 	pn.ObjectMeta.ResourceVersion = ""
 	pn.Spec.ServiceAccountName = ""
 	//pod.Spec.DeprecatedServiceAccount = ""
-	pn.Spec.DNSPolicy = ""
-	pn.Spec.SchedulerName = ""
+	//pn.Spec.SchedulerName = ""
 	//pod.Spec.ImagePullSecrets = []v1.LocalObjectReference{}
 	automountSaToken := false
 	pn.Spec.AutomountServiceAccountToken = &automountSaToken
-	pn.Spec.DNSPolicy = api.DNSDefault
+	//pn.Spec.DNSPolicy = api.DNSDefault
 
 	// remove secrets volume from pod & container(s)
 	rmSV(&pn)
