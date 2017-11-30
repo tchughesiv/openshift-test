@@ -8,12 +8,21 @@
 
 ### Getting started
 
+The goal of this tool is to provide an easier way of testing a container against various security contexts w/o running a full OpenShift cluster. This tool only requires access to a k8s supported container runtime... docker, cri-o, etc.
+
+`sccoc run` is the only command allowed w/ this tool today.  It maps directly to the [`oc run`](https://docs.openshift.org/latest/cli_reference/basic_cli_operations.html#run) command. Today, only a pod resource is generated/allowed.
+
 build
 ```shell
 $ git clone https://github.com/tchughesiv/sccoc $GOROOT/src/github.com/openshift/origin
 $ cd $GOROOT/src/github.com/openshift/origin/
 $ git submodule update --init
 $ make -C origin WHAT=cmd/sccoc
+# defaults to "restricted" scc
+$ sudo sccoc run testpod --image=registry.centos.org/container-examples/starter-arbitrary-uid
+# can specify an alternate scc w/ the "OPENSHIFT_SCC" env variable
+# e.g.
+$ sudo OPENSHIFT_SCC=nonroot sccoc run testpod --image=registry.centos.org/container-examples/starter-arbitrary-uid
 ```
 
 dev
