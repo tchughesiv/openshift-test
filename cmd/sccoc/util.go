@@ -34,7 +34,7 @@ func contains(sccopts []string, sflag string) bool {
 	return false
 }
 
-func exportPod(kclient internalclientset.Interface, namespace string, mpath string) v1.Pod {
+func recreatePod(kclient internalclientset.Interface, namespace string, mpath string) v1.Pod {
 	zero := int64(0)
 	do := metav1.DeleteOptions{GracePeriodSeconds: &zero}
 

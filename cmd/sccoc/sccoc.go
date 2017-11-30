@@ -96,7 +96,7 @@ func main() {
 
 	// How can suppress the "startup" logs????
 	//os.Setenv("KUBELET_NETWORK_ARGS", "")
-	mconfig, nconfig, _, err := testserver.DefaultAllInOneOptions()
+	mconfig, nconfig, components, err := testserver.DefaultAllInOneOptions()
 	checkErr(err)
 
 	mkDir(d)
@@ -137,28 +137,6 @@ func main() {
 	sccMod(sflag, namespace, securityClient)
 	sccRm(sflag, namespace, securityClient)
 
-	// delete secrets before pod creation
-	/*
-		si := kclient.Core().Secrets(namespace)
-		se, err := si.List(metav1.ListOptions{})
-		checkErr(err)
-		zero := int64(0)
-		for _, z := range se.Items {
-			fmt.Println(z.Name)
-			checkErr(si.Delete(z.Name, &metav1.DeleteOptions{GracePeriodSeconds: &zero}))
-		}
-		checkErr(si.DeleteCollection(&metav1.DeleteOptions{GracePeriodSeconds: &zero}, metav1.ListOptions{}))
-		se, err = si.List(metav1.ListOptions{})
-		checkErr(err)
-		for _, y := range se.Items {
-			fmt.Println(y.Name)
-			checkErr(si.Delete(y.Name, &metav1.DeleteOptions{GracePeriodSeconds: &zero}))
-		}
-		checkErr(si.DeleteCollection(&metav1.DeleteOptions{GracePeriodSeconds: &zero}, metav1.ListOptions{}))
-		se, err = si.List(metav1.ListOptions{})
-		checkErr(err)
-	*/
-
 	/*
 		os.Args = []string{"oc", "delete", "secrets", "--all"}
 		command := cli.CommandFor("oc")
@@ -176,9 +154,10 @@ func main() {
 		os.Exit(1)
 	}
 
-	// remove token from default sa before pod creation
-	p := exportPod(kclient, namespace, mpath)
+	// remove secrets from pod before kubelet runs
+	p := recreatePod(kclient, namespace, mpath)
 	runKubelet(nodeconfig, p)
+	checkErr(testserver.StartConfiguredNode(nconfig, components))
 
 	fmt.Println("\ntime until master ready...")
 	fmt.Println(n2)
