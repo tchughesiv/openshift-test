@@ -12,11 +12,15 @@ The goal of this tool is to provide an easier way of testing a container against
 
 `sccoc run` is the only command allowed w/ this tool today.  It maps directly to the [`oc run`](https://docs.openshift.org/latest/cli_reference/basic_cli_operations.html#run) command. Currently, only a pod resource is generated/allowed.
 
-build
+#### build
 ```shell
 $ git clone https://github.com/tchughesiv/sccoc $GOPATH/src/github.com/openshift/origin
 $ cd $GOPATH/src/github.com/openshift/origin/
 $ make
+```
+
+#### run
+```shell
 # set path to sccoc binary
 $ sccoc=$(source ./origin/hack/lib/init.sh && which sccoc) && echo $sccoc
 # the tool defaults to the "restricted" scc... e.g.
@@ -30,7 +34,7 @@ $ telnet localhost 3306
 
 It's currently helpfuly to open a separate terminal while your container deploys and monitor the runtime for your pod. Once the image is pulled and pod deployed, sccoc can be exited.
 
-install
+#### install
 ```shell
 # set path to sccoc binary
 $ sccoc=$(source ./origin/hack/lib/init.sh && which sccoc) && echo $sccoc
