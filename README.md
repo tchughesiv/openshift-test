@@ -14,10 +14,9 @@ The goal of this tool is to provide an easier way of testing a container against
 
 build
 ```shell
-$ git clone https://github.com/tchughesiv/sccoc $GOROOT/src/github.com/openshift/origin
-$ cd $GOROOT/src/github.com/openshift/origin/
-$ git submodule update --init
-$ make -C origin WHAT=cmd/sccoc
+$ git clone https://github.com/tchughesiv/sccoc $GOPATH/src/github.com/openshift/origin
+$ cd $GOPATH/src/github.com/openshift/origin/
+$ make
 # defaults to "restricted" scc
 $ sudo sccoc run testpod --image=registry.centos.org/container-examples/starter-arbitrary-uid
 # can specify an alternate scc w/ the "OPENSHIFT_SCC" env variable
@@ -29,6 +28,7 @@ It's currently helpfuly to open a separate terminal while your container deploys
 
 dev
 ```shell
+#$ git submodule update --init
 $ git submodule add -f -b release-3.7 https://github.com/openshift/origin
 $ ln -s ./origin/vendor
 $ ln -s ./origin/pkg
