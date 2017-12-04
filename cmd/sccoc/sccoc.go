@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	configapi "github.com/openshift/origin/pkg/cmd/server/api"
 	bp "github.com/openshift/origin/pkg/cmd/server/bootstrappolicy"
 	"github.com/openshift/origin/pkg/cmd/server/kubernetes/node"
 	nodeoptions "github.com/openshift/origin/pkg/cmd/server/kubernetes/node/options"
@@ -19,7 +18,6 @@ import (
 	"github.com/openshift/origin/pkg/oc/cli/config"
 	testutil "github.com/openshift/origin/test/util"
 	testserver "github.com/openshift/origin/test/util/server"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kclientcmd "k8s.io/client-go/tools/clientcmd"
 
 	// install all APIs
@@ -31,7 +29,7 @@ import (
 )
 
 // OPENSHIFT_SCC=nonroot origin/_output/local/bin/linux/amd64/sccoc run testpod --image=registry.centos.org/container-examples/starter-arbitrary-uid
-// OPENSHIFT_SCC=nonroot sccoc run testpod --image=registry.centos.org/container-examples/starter-arbitrary-uid
+// sudo OPENSHIFT_SCC=nonroot sccoc run testpod --image=registry.centos.org/container-examples/starter-arbitrary-uid
 // ./origin/cmd/oc/oc.go
 // sudo KUBECONFIG=/tmp/openshift-integration/openshift.local.config/master/admin.kubeconfig oc get all --all-namespaces
 // maybe limit to just run???
@@ -73,7 +71,6 @@ func main() {
 	os.Args = args
 	var sccopts []string
 	sflag := cmdutil.Env("OPENSHIFT_SCC", bp.SecurityContextConstraintRestricted)
-	os.Setenv("KUBECONFIG", testutil.KubeConfigPath())
 	os.Setenv("TEST_ETCD_DIR", testutil.GetBaseDir()+"/etcd")
 
 	if len(os.Args) == 1 {
@@ -97,27 +94,30 @@ func main() {
 		os.Exit(1)
 	}
 
-	// How can supress the "startup" logs????
+	// How can suppress the "startup" logs????
 	//os.Setenv("KUBELET_NETWORK_ARGS", "")
 	mconfig, nconfig, _, err := testserver.DefaultAllInOneOptions()
 	checkErr(err)
 
 	mkDir(d)
 	mpath := testutil.GetBaseDir() + "/manifests"
-	nconfig.PodManifestConfig = &configapi.PodManifestConfig{
-		Path: mpath,
-		FileCheckIntervalSeconds: int64(2),
-	}
-	_, err = testserver.StartConfiguredMaster(mconfig)
+	/*
+		nconfig.PodManifestConfig = &configapi.PodManifestConfig{
+			Path: mpath,
+			FileCheckIntervalSeconds: int64(1),
+		}
+	*/
+	kconfig, err := testserver.StartConfiguredMaster(mconfig)
+	//kconfig, err := testserver.StartConfiguredAllInOne(mconfig, nconfig, components)
 	checkErr(err)
-	mkDir(mpath)
+	os.Setenv("KUBECONFIG", kconfig)
+	//mkDir(mpath)
 
 	s, err := nodeoptions.Build(*nconfig)
 	checkErr(err)
-	s.ClusterDNS = []string{mconfig.DNSConfig.BindAddress}
+	//_, err = node.New(*nconfig, s)
 	nodeconfig, err := node.New(*nconfig, s)
 	checkErr(err)
-	// kubeDeps := nodeconfig.KubeletDeps
 
 	cfg, err := config.NewOpenShiftClientConfigLoadingRules().Load()
 	checkErr(err)
@@ -129,25 +129,21 @@ func main() {
 	checkErr(err)
 
 	// wait for default serviceaccount to exist
-	_, err = kclient.Core().ServiceAccounts(namespace).Get(bp.DefaultServiceAccountName, metav1.GetOptions{})
-	for i := 0; err != nil && i < 100; i++ {
-		time.Sleep(time.Millisecond * 200)
-		_, err = kclient.Core().ServiceAccounts(namespace).Get(bp.DefaultServiceAccountName, metav1.GetOptions{})
-	}
-	n2 := time.Since(n)
+	checkErr(testserver.WaitForServiceAccounts(kclient, namespace, []string{bp.DefaultServiceAccountName}))
 
-	//in, out, errout := os.Stdin, os.Stdout, os.Stderr
-
-	// modify scc settings accordingly
+	// modify scc settings before pod creation
 	securityClient, err := f.OpenshiftInternalSecurityClient()
 	checkErr(err)
-	ch := make(chan bool)
-	go sccMod(sflag, namespace, securityClient, ch)
-	go sccRm(sflag, namespace, securityClient, ch)
-	fmt.Println(ch)
+	sccMod(sflag, namespace, securityClient)
+	sccRm(sflag, namespace, securityClient)
 
-	defer exportPod(kclient, namespace, mpath)
-	defer runKubelet(s, nodeconfig)
+	/*
+		os.Args = []string{"oc", "delete", "secrets", "--all"}
+		command := cli.CommandFor("oc")
+		if err := command.Execute(); err != nil {
+			os.Exit(1)
+		}
+	*/
 
 	// execute cli command
 	// kcommand := cli.CommandFor("kubectl")
@@ -158,17 +154,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	// fmt.Println(string(jpod))
+	// remove secrets from pod before kubelet runs
+	p := recreatePod(kclient, namespace, mpath)
 
-	fmt.Println("\ntime until master ready...")
-	fmt.Println(n2)
-	fmt.Println("\nTotal time.")
+	fmt.Println("\nTotal start time:")
 	fmt.Println(time.Since(n))
 
-	/*
-		os.Args = []string{"oc", "get", "pod", pod.GetName(), "--namespace=" + namespace, "--output=yaml"}
-		if err := kcommand.Execute(); err != nil {
-			os.Exit(1)
-		}
-	*/
+	runKubelet(nodeconfig, p)
+	//checkErr(testserver.StartConfiguredNode(nconfig, components))
 }
