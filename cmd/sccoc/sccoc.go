@@ -28,16 +28,7 @@ import (
 	_ "k8s.io/kubernetes/pkg/apis/extensions/install"
 )
 
-// OPENSHIFT_SCC=nonroot origin/_output/local/bin/linux/amd64/sccoc run testpod --image=registry.centos.org/container-examples/starter-arbitrary-uid
-// sudo OPENSHIFT_SCC=nonroot sccoc run testpod --image=registry.centos.org/container-examples/starter-arbitrary-uid
-// ./origin/cmd/oc/oc.go
-// sudo KUBECONFIG=/tmp/openshift-integration/openshift.local.config/master/admin.kubeconfig oc get all --all-namespaces
-// maybe limit to just run???
-
-// 1. start test master
-// 2. execute "run" against to generate pod yaml w/ scc
-// 3. export yaml w/ sc settings to pod manifest dir
-// 4. start kubelet pointed to manifest dir - should deploy pod
+// TODO - try moving away from running kubelet to, instead, direct container runtime interaction for compatibility on more OS's
 var (
 	n    = time.Now()
 	args = os.Args
@@ -45,6 +36,7 @@ var (
 )
 
 func init() {
+	// How can further suppress the "startup" logs????
 	/*
 		logs.InitLogs()
 		defer logs.FlushLogs()
@@ -94,8 +86,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	// How can suppress the "startup" logs????
-	//os.Setenv("KUBELET_NETWORK_ARGS", "")
 	mconfig, nconfig, _, err := testserver.DefaultAllInOneOptions()
 	checkErr(err)
 
@@ -137,15 +127,7 @@ func main() {
 	sccMod(sflag, namespace, securityClient)
 	sccRm(sflag, namespace, securityClient)
 
-	/*
-		os.Args = []string{"oc", "delete", "secrets", "--all"}
-		command := cli.CommandFor("oc")
-		if err := command.Execute(); err != nil {
-			os.Exit(1)
-		}
-	*/
-
-	// execute cli command
+	// execute cli command, force pod resource
 	// kcommand := cli.CommandFor("kubectl")
 	command := cli.CommandFor("oc")
 	os.Args = append(os.Args, "--restart=Never")
@@ -155,11 +137,11 @@ func main() {
 	}
 
 	// remove secrets from pod before kubelet runs
-	p := recreatePod(kclient, namespace, mpath)
+	recreatePod(kclient, namespace, mpath)
 
 	fmt.Println("\nTotal start time:")
 	fmt.Println(time.Since(n))
 
-	runKubelet(nodeconfig, p)
+	runKubelet(nodeconfig)
 	//checkErr(testserver.StartConfiguredNode(nconfig, components))
 }

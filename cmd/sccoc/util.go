@@ -14,7 +14,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/kubernetes/cmd/kubelet/app"
 	"k8s.io/kubernetes/pkg/api"
-	v1 "k8s.io/kubernetes/pkg/api/v1"
 	"k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
 )
 
@@ -33,7 +32,8 @@ func contains(sccopts []string, sflag string) bool {
 	return false
 }
 
-func recreatePod(kclient internalclientset.Interface, namespace string, mpath string) v1.Pod {
+//func recreatePod(kclient internalclientset.Interface, namespace string, mpath string) v1.Pod {
+func recreatePod(kclient internalclientset.Interface, namespace string, mpath string) {
 	zero := int64(0)
 	do := metav1.DeleteOptions{GracePeriodSeconds: &zero}
 
@@ -63,37 +63,37 @@ func recreatePod(kclient internalclientset.Interface, namespace string, mpath st
 	*/
 
 	// convert pod mods
-	externalPod := &v1.Pod{}
-	checkErr(v1.Convert_api_Pod_To_v1_Pod(pod, externalPod, nil))
-	p := *externalPod
 
 	/*
-		podyf := mpath + "/" + p.Name + ".yaml"
+			externalPod := &v1.Pod{}
+			checkErr(v1.Convert_api_Pod_To_v1_Pod(pod, externalPod, nil))
+			p := *externalPod
+				podyf := mpath + "/" + p.Name + ".yaml"
 
-		//	u := string(p.ObjectMeta.UID)
-		//	podyf := mpath + "/" + u + ".yaml"
-		//	p.Name = u
-		//	p.SelfLink = "/api/" + p.TypeMeta.APIVersion + "/namespaces/" + p.Namespace + "/pods/" + p.Name
+				//	u := string(p.ObjectMeta.UID)
+				//	podyf := mpath + "/" + u + ".yaml"
+				//	p.Name = u
+				//	p.SelfLink = "/api/" + p.TypeMeta.APIVersion + "/namespaces/" + p.Namespace + "/pods/" + p.Name
 
-		p.Status = v1.PodStatus{}
-		p.TypeMeta.Kind = "Pod"
-		p.TypeMeta.APIVersion = "v1"
-		p.Spec.DeprecatedServiceAccount = ""
+				p.Status = v1.PodStatus{}
+				p.TypeMeta.Kind = "Pod"
+				p.TypeMeta.APIVersion = "v1"
+				p.Spec.DeprecatedServiceAccount = ""
 
-		jpod, err := json.Marshal(p)
-		checkErr(err)
-		pyaml, err := yaml.JSONToYAML(jpod)
-		checkErr(err)
+				jpod, err := json.Marshal(p)
+				checkErr(err)
+				pyaml, err := yaml.JSONToYAML(jpod)
+				checkErr(err)
 
-		ioutil.WriteFile(podyf, pyaml, os.FileMode(0644))
+				ioutil.WriteFile(podyf, pyaml, os.FileMode(0644))
+		return p
 	*/
-	return p
 }
 
-func runKubelet(nodeconfig *node.NodeConfig, p v1.Pod) {
-	// requires higher max user watches for file method... not using right now
+//func runKubelet(nodeconfig *node.NodeConfig, p v1.Pod) {
+func runKubelet(nodeconfig *node.NodeConfig) {
+	// requires higher max user watches for file method... NOT using right now
 	// sudo sysctl fs.inotify.max_user_watches=524288
-	// ?? make the change permanent, edit the file /etc/sysctl.conf and add the line to the end of the file
 	// remove serviceaccount, secrets, resourceVersion from pod yaml before processing as mirror pod
 
 	/*
