@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"os"
 
@@ -10,10 +11,13 @@ import (
 	"github.com/openshift/origin/pkg/cmd/server/kubernetes/node"
 	"github.com/openshift/origin/pkg/oc/admin/policy"
 	securityclientinternal "github.com/openshift/origin/pkg/security/generated/internalclientset"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/kubernetes/cmd/kubelet/app"
 	"k8s.io/kubernetes/pkg/api"
+	"k8s.io/kubernetes/pkg/api/v1"
+	"k8s.io/kubernetes/pkg/apis/componentconfig"
 	"k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
 )
 
@@ -46,11 +50,13 @@ func recreatePod(kclient internalclientset.Interface, namespace string, mpath st
 	// modify pod
 	modPod(pod)
 
+	// remove pod secrets
+	rmSV(pod)
+
 	// delete pod
 	checkErr(podint.Delete(pod.Name, &do))
 
 	// recreate modified pod w/o secret volume(s)
-	//n, err := podint.Create(pod)
 	_, err = podint.Create(pod)
 	checkErr(err)
 
@@ -92,56 +98,17 @@ func recreatePod(kclient internalclientset.Interface, namespace string, mpath st
 
 //func runKubelet(nodeconfig *node.NodeConfig, p v1.Pod) {
 func runKubelet(nodeconfig *node.NodeConfig) {
-	// requires higher max user watches for file method... NOT using right now
-	// sudo sysctl fs.inotify.max_user_watches=524288
-	// remove serviceaccount, secrets, resourceVersion from pod yaml before processing as mirror pod
-
-	/*
-		//kubeDeps, err := app.UnsecuredKubeletDeps(s)
-		kubeCfg := s.KubeletConfiguration
-		kubeFlags := s.KubeletFlags
-
-		//_, err := app.CreateAndInitKubelet(&kubeCfg, kubeDeps, &kubeFlags.ContainerRuntimeOptions, true, kubeFlags.HostnameOverride, kubeFlags.NodeIP, kubeFlags.ProviderID)
-		//checkErr(err)
-		k, err := kubelet.NewMainKubelet(&kubeCfg, kubeDeps, &kubeFlags.ContainerRuntimeOptions, true, kubeFlags.HostnameOverride, kubeFlags.NodeIP, kubeFlags.ProviderID)
-		checkErr(err)
-
-		rt := k.GetRuntime()
-		i, err := rt.ListImages()
-		checkErr(err)
-		pl, err := rt.GetPods(true)
-		checkErr(err)
-		var pln []*v1.Pod
-		for _, t := range pl {
-			pln = append(pln, t.ToAPIPod())
-		}
-
-		pln = append(pln, &p)
-		k.HandlePodRemoves(pln)
-		k.HandlePodAdditions(pln)
-		k.HandlePodUpdates(pln)
-		k.HandlePodReconcile(pln)
-		k.HandlePodSyncs(pln)
-		k.HandlePodCleanups()
-		// ch := ktypes.PodUpdate{}
-		// k.RunOnce()
-
-		//checkErr(app.Run(s, nodeconfig.KubeletDeps))
-		checkErr(app.Run(s, nil))
-	*/
-
-	// s.KeepTerminatedPodVolumes = false
-	s := nodeconfig.KubeletServer
-	//s.RunOnce = true
 	kubeDeps := nodeconfig.KubeletDeps
-	checkErr(app.Run(s, kubeDeps))
+	s := nodeconfig.KubeletServer
+	s.Containerized = true
 
-	/*
-		fmt.Println(kubeDeps.ContainerManager.Status())
-		pm := kubeDeps.ContainerManager.NewPodContainerManager()
-		checkErr(pm.EnsureExists(&p))
-		fmt.Println(pm.GetAllPodsFromCgroups())
-	*/
+	dinfo, err := kubeDeps.DockerClient.Info()
+	checkErr(err)
+	s.CgroupDriver = dinfo.CgroupDriver
+	s.RunOnce = false
+	//kubeCfg := s.KubeletConfiguration
+
+	checkErr(app.Run(s, kubeDeps))
 	//checkErr(app.RunKubelet(&kubeFlags, &kubeCfg, kubeDeps, false, true))
 }
 
@@ -193,9 +160,6 @@ func modPod(p *api.Pod) {
 	automountSaToken := false
 	p.Spec.AutomountServiceAccountToken = &automountSaToken
 	//pn.Spec.DNSPolicy = api.DNSDefault
-
-	// remove secrets volume from pod & container(s)
-	rmSV(p)
 }
 
 func rmSV(p *api.Pod) {
@@ -211,4 +175,35 @@ func rmSV(p *api.Pod) {
 			p.Spec.Volumes = append(p.Spec.Volumes[:i], p.Spec.Volumes[i+1:]...)
 		}
 	}
+}
+
+// parseResourceList parses the given configuration map into an API
+// ResourceList or returns an error.
+func parseResourceList(m componentconfig.ConfigurationMap) (v1.ResourceList, error) {
+	if len(m) == 0 {
+		return nil, nil
+	}
+	rl := make(v1.ResourceList)
+	for k, v := range m {
+		switch v1.ResourceName(k) {
+		// CPU, memory and local storage resources are supported.
+		case v1.ResourceCPU, v1.ResourceMemory, v1.ResourceStorage:
+			q, err := resource.ParseQuantity(v)
+			if err != nil {
+				return nil, err
+			}
+			if q.Sign() == -1 {
+				return nil, fmt.Errorf("resource quantity for %q cannot be negative: %v", k, v)
+			}
+			// storage specified in configuration map is mapped to ResourceStorageScratch API
+			if v1.ResourceName(k) == v1.ResourceStorage {
+				rl[v1.ResourceStorageScratch] = q
+			} else {
+				rl[v1.ResourceName(k)] = q
+			}
+		default:
+			return nil, fmt.Errorf("cannot reserve %q resource", k)
+		}
+	}
+	return rl, nil
 }

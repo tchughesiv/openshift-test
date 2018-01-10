@@ -29,6 +29,7 @@ import (
 )
 
 // TODO - try moving away from running kubelet to, instead, direct container runtime interaction for compatibility on more OS's
+// eventually offer in "oc"? initiate w/ --local flag?
 var (
 	n    = time.Now()
 	args = os.Args
@@ -36,12 +37,15 @@ var (
 )
 
 func init() {
-	// How can further suppress the "startup" logs????
 	/*
-		logs.InitLogs()
-		defer logs.FlushLogs()
-		defer serviceability.BehaviorOnPanic(os.Getenv("OPENSHIFT_ON_PANIC"))()
-		defer serviceability.Profile(os.Getenv("OPENSHIFT_PROFILE")).Stop()
+		if runtime.GOOS == "darwin" {
+			os.Setenv("TMPDIR", "/tmp")
+		}
+		// How can we further suppress the "startup" logs????
+			logs.InitLogs()
+			defer logs.FlushLogs()
+			defer serviceability.BehaviorOnPanic(os.Getenv("OPENSHIFT_ON_PANIC"))()
+			defer serviceability.Profile(os.Getenv("OPENSHIFT_PROFILE")).Stop()
 	*/
 	rand.Seed(time.Now().UTC().UnixNano())
 	if len(os.Getenv("GOMAXPROCS")) == 0 {
