@@ -46,11 +46,13 @@ func recreatePod(kclient internalclientset.Interface, namespace string, mpath st
 	// modify pod
 	modPod(pod)
 
+	// remove pod secrets
+	rmSV(pod)
+
 	// delete pod
 	checkErr(podint.Delete(pod.Name, &do))
 
 	// recreate modified pod w/o secret volume(s)
-	//n, err := podint.Create(pod)
 	_, err = podint.Create(pod)
 	checkErr(err)
 
@@ -92,56 +94,17 @@ func recreatePod(kclient internalclientset.Interface, namespace string, mpath st
 
 //func runKubelet(nodeconfig *node.NodeConfig, p v1.Pod) {
 func runKubelet(nodeconfig *node.NodeConfig) {
-	// requires higher max user watches for file method... NOT using right now
-	// sudo sysctl fs.inotify.max_user_watches=524288
-	// remove serviceaccount, secrets, resourceVersion from pod yaml before processing as mirror pod
-
-	/*
-		//kubeDeps, err := app.UnsecuredKubeletDeps(s)
-		kubeCfg := s.KubeletConfiguration
-		kubeFlags := s.KubeletFlags
-
-		//_, err := app.CreateAndInitKubelet(&kubeCfg, kubeDeps, &kubeFlags.ContainerRuntimeOptions, true, kubeFlags.HostnameOverride, kubeFlags.NodeIP, kubeFlags.ProviderID)
-		//checkErr(err)
-		k, err := kubelet.NewMainKubelet(&kubeCfg, kubeDeps, &kubeFlags.ContainerRuntimeOptions, true, kubeFlags.HostnameOverride, kubeFlags.NodeIP, kubeFlags.ProviderID)
-		checkErr(err)
-
-		rt := k.GetRuntime()
-		i, err := rt.ListImages()
-		checkErr(err)
-		pl, err := rt.GetPods(true)
-		checkErr(err)
-		var pln []*v1.Pod
-		for _, t := range pl {
-			pln = append(pln, t.ToAPIPod())
-		}
-
-		pln = append(pln, &p)
-		k.HandlePodRemoves(pln)
-		k.HandlePodAdditions(pln)
-		k.HandlePodUpdates(pln)
-		k.HandlePodReconcile(pln)
-		k.HandlePodSyncs(pln)
-		k.HandlePodCleanups()
-		// ch := ktypes.PodUpdate{}
-		// k.RunOnce()
-
-		//checkErr(app.Run(s, nodeconfig.KubeletDeps))
-		checkErr(app.Run(s, nil))
-	*/
-
-	// s.KeepTerminatedPodVolumes = false
-	s := nodeconfig.KubeletServer
-	//s.RunOnce = true
 	kubeDeps := nodeconfig.KubeletDeps
-	checkErr(app.Run(s, kubeDeps))
+	s := nodeconfig.KubeletServer
+	s.Containerized = true
 
-	/*
-		fmt.Println(kubeDeps.ContainerManager.Status())
-		pm := kubeDeps.ContainerManager.NewPodContainerManager()
-		checkErr(pm.EnsureExists(&p))
-		fmt.Println(pm.GetAllPodsFromCgroups())
-	*/
+	dinfo, err := kubeDeps.DockerClient.Info()
+	checkErr(err)
+	s.CgroupDriver = dinfo.CgroupDriver
+	s.RunOnce = false
+	//kubeCfg := s.KubeletConfiguration
+
+	checkErr(app.Run(s, kubeDeps))
 	//checkErr(app.RunKubelet(&kubeFlags, &kubeCfg, kubeDeps, false, true))
 }
 
@@ -193,9 +156,6 @@ func modPod(p *api.Pod) {
 	automountSaToken := false
 	p.Spec.AutomountServiceAccountToken = &automountSaToken
 	//pn.Spec.DNSPolicy = api.DNSDefault
-
-	// remove secrets volume from pod & container(s)
-	rmSV(p)
 }
 
 func rmSV(p *api.Pod) {
