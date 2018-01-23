@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"os"
 
@@ -11,13 +10,10 @@ import (
 	"github.com/openshift/origin/pkg/cmd/server/kubernetes/node"
 	"github.com/openshift/origin/pkg/oc/admin/policy"
 	securityclientinternal "github.com/openshift/origin/pkg/security/generated/internalclientset"
-	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/kubernetes/cmd/kubelet/app"
 	"k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/api/v1"
-	"k8s.io/kubernetes/pkg/apis/componentconfig"
 	"k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
 )
 
@@ -175,35 +171,4 @@ func rmSV(p *api.Pod) {
 			p.Spec.Volumes = append(p.Spec.Volumes[:i], p.Spec.Volumes[i+1:]...)
 		}
 	}
-}
-
-// parseResourceList parses the given configuration map into an API
-// ResourceList or returns an error.
-func parseResourceList(m componentconfig.ConfigurationMap) (v1.ResourceList, error) {
-	if len(m) == 0 {
-		return nil, nil
-	}
-	rl := make(v1.ResourceList)
-	for k, v := range m {
-		switch v1.ResourceName(k) {
-		// CPU, memory and local storage resources are supported.
-		case v1.ResourceCPU, v1.ResourceMemory, v1.ResourceStorage:
-			q, err := resource.ParseQuantity(v)
-			if err != nil {
-				return nil, err
-			}
-			if q.Sign() == -1 {
-				return nil, fmt.Errorf("resource quantity for %q cannot be negative: %v", k, v)
-			}
-			// storage specified in configuration map is mapped to ResourceStorageScratch API
-			if v1.ResourceName(k) == v1.ResourceStorage {
-				rl[v1.ResourceStorageScratch] = q
-			} else {
-				rl[v1.ResourceName(k)] = q
-			}
-		default:
-			return nil, fmt.Errorf("cannot reserve %q resource", k)
-		}
-	}
-	return rl, nil
 }

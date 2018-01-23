@@ -4,7 +4,7 @@
 
 [wip] openshift scc image test tool
 
- - relies on Origin release-3.7 as a submodule
+ - relies on Origin v3.7.x as a submodule
 
 ### Getting started
 
