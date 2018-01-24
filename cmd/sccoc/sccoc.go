@@ -28,8 +28,7 @@ import (
 	_ "k8s.io/kubernetes/pkg/apis/extensions/install"
 )
 
-// TODO - try moving away from running kubelet to, instead, direct container runtime interaction for compatibility on more OS's
-// eventually offer in "oc"? initiate w/ --local flag?
+// eventually offer in "oc"? initiate w/ --local flag? --test?
 var (
 	n    = time.Now()
 	args = os.Args
@@ -42,10 +41,10 @@ func init() {
 			os.Setenv("TMPDIR", "/tmp")
 		}
 		// How can we further suppress the "startup" logs????
-			logs.InitLogs()
-			defer logs.FlushLogs()
-			defer serviceability.BehaviorOnPanic(os.Getenv("OPENSHIFT_ON_PANIC"))()
-			defer serviceability.Profile(os.Getenv("OPENSHIFT_PROFILE")).Stop()
+		logs.InitLogs()
+		defer logs.FlushLogs()
+		defer serviceability.BehaviorOnPanic(os.Getenv("OPENSHIFT_ON_PANIC"))()
+		defer serviceability.Profile(os.Getenv("OPENSHIFT_PROFILE")).Stop()
 	*/
 	rand.Seed(time.Now().UTC().UnixNano())
 	if len(os.Getenv("GOMAXPROCS")) == 0 {
@@ -102,21 +101,18 @@ func main() {
 		}
 	*/
 	kconfig, err := testserver.StartConfiguredMaster(mconfig)
-	//kconfig, err := testserver.StartConfiguredAllInOne(mconfig, nconfig, components)
 	checkErr(err)
 	os.Setenv("KUBECONFIG", kconfig)
 	//mkDir(mpath)
 
 	s, err := nodeoptions.Build(*nconfig)
 	checkErr(err)
-	//_, err = node.New(*nconfig, s)
 	nodeconfig, err := node.New(*nconfig, s)
 	checkErr(err)
 
 	cfg, err := config.NewOpenShiftClientConfigLoadingRules().Load()
 	checkErr(err)
-	defaultCfg := kclientcmd.NewDefaultClientConfig(*cfg, &kclientcmd.ConfigOverrides{})
-	f := clientcmd.NewFactory(defaultCfg)
+	f := clientcmd.NewFactory(kclientcmd.NewDefaultClientConfig(*cfg, &kclientcmd.ConfigOverrides{}))
 	namespace, _, err := f.DefaultNamespace()
 	checkErr(err)
 	kclient, err := f.ClientSet()
@@ -132,7 +128,7 @@ func main() {
 	sccRm(sflag, namespace, securityClient)
 
 	// execute cli command, force pod resource
-	// kcommand := cli.CommandFor("kubectl")
+	// command := cli.CommandFor("kubectl")
 	command := cli.CommandFor("oc")
 	os.Args = append(os.Args, "--restart=Never")
 	os.Args = append(os.Args, "--namespace="+namespace)
@@ -147,5 +143,4 @@ func main() {
 	fmt.Println(time.Since(n))
 
 	runKubelet(nodeconfig)
-	//checkErr(testserver.StartConfiguredNode(nconfig, components))
 }
