@@ -12,17 +12,12 @@ The goal of this tool is to provide an easier way of testing a container against
 
 `sccoc run` is the only command allowed w/ this tool today.  It maps directly to the [`oc run`](https://docs.openshift.org/latest/cli_reference/basic_cli_operations.html#run) command. Currently, only a pod resource is generated/allowed.
 
-#### build
-```shell
-$ git clone https://github.com/tchughesiv/sccoc $GOPATH/src/github.com/openshift/origin
-$ cd $GOPATH/src/github.com/openshift/origin/
-$ make
-```
-
-#### run
+#### run the image
 ```shell
 # create an alias to sccoc image
-$ alias sccoc='_(){ export OPENSHIFT_SCC=${OPENSHIFT_SCC}; }; _; sudo docker run --rm -ti --privileged --pid=host --net=host -v /run:/run -v /sys:/sys -v /sys/fs/cgroup:/sys/fs/cgroup -v /var/lib/docker:/var/lib/docker -v /tmp:/tmp -e OPENSHIFT_SCC=${OPENSHIFT_SCC} tchughesiv/sccoc'
+$ alias sccoc='_(){ export OPENSHIFT_SCC=${OPENSHIFT_SCC}; }; _; sudo docker run --rm --privileged --pid=host --net=host -v /run:/run -v /sys:/sys -v /sys/fs/cgroup:/sys/fs/cgroup -v /var/lib/docker:/var/lib/docker -v /tmp:/tmp -e OPENSHIFT_SCC=${OPENSHIFT_SCC} docker.io/tchughesiv/sccoc'
+
+# alias sccoc='_(){ export OPENSHIFT_SCC=${OPENSHIFT_SCC}; }; _; sudo docker run --rm --privileged -v /run:/run -v /sys:/sys -v /sys/fs/cgroup:/sys/fs/cgroup -v /var/lib/docker:/var/lib/docker -v /tmp:/tmp -e OPENSHIFT_SCC=${OPENSHIFT_SCC} docker.io/tchughesiv/sccoc'
 
 # $ alias sccoc="sudo docker run --rm -ti --privileged --pid=host --net=host -v /run:/run -v /sys:/sys -v /sys/fs/cgroup:/sys/fs/cgroup -v /var/lib/docker:/var/lib/docker -v /tmp:/tmp tchughesiv/sccoc"
 
@@ -40,22 +35,18 @@ $ telnet localhost 3306
 
 It's currently helpfuly to open a separate terminal while your container deploys and monitor the runtime for your pod. Once the image is pulled and pod deployed, sccoc can be exited.
 
-#### install
+#### build
 ```shell
-# set path to sccoc binary
-# $ sccoc=$(source ./origin/hack/lib/init.sh && which sccoc) && echo $sccoc
-
-# manual install for now
-#$ sudo install -m755 $sccoc /usr/bin
-
-$ sccoc run testpod --image=registry.centos.org/container-examples/starter-arbitrary-uid
+$ git clone https://github.com/tchughesiv/sccoc $GOPATH/src/github.com/openshift/origin
+$ cd $GOPATH/src/github.com/openshift/origin/
+$ make
 ```
 
 #### dev
 ```shell
 $ cd $GOPATH/src/github.com/openshift/origin/
 $ git submodule update --init
-#$ git submodule add -f -b release-3.7 https://github.com/openshift/origin
+#$ git submodule add -f -b v3.7.1 https://github.com/openshift/origin
 #$ ln -s ./origin/vendor
 #$ ln -s ./origin/pkg
 #$ ln -s ./origin/test
