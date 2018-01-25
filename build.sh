@@ -8,4 +8,4 @@ BINARY=$4
 BDIR=/build
 docker run --rm -u `id -u` -tiv ${PWD}:${BDIR}:z ${BUILDER_IMAGE} \
   bash -c "${BDIR}/go_build.sh ${GO_BUILD}"
-cp -rp image/* ${OUTPUT_DIR}/
+cp -p Dockerfile ${OUTPUT_DIR}/
