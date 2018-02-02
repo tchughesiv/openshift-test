@@ -23,16 +23,17 @@ func checkErr(err error) {
 	}
 }
 
-func contains(sccopts []string, sflag string) bool {
-	for _, a := range sccopts {
-		if a == sflag {
+func contains(o []string, f string) bool {
+	for _, a := range o {
+		if a == f {
 			return true
 		}
 	}
 	return false
 }
 
-func recreatePod(kclient internalclientset.Interface, namespace string, mpath string) {
+// func recreatePod(kclient internalclientset.Interface, namespace string, mpath string) {
+func recreatePod(kclient internalclientset.Interface, namespace string) {
 	zero := int64(0)
 	do := metav1.DeleteOptions{GracePeriodSeconds: &zero}
 

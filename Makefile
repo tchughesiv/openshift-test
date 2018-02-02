@@ -1,6 +1,6 @@
 WHAT=cmd/sccoc
 BUILDER_IMAGE=registry.centos.org/che-stacks/centos-go
-IMAGE_NAME=sccoc
+IMAGE_NAME=docker.io/tchughesiv/sccoc
 OUTPUT_DIR=origin/_output/local/bin/linux/amd64
 BINARY=sccoc
 

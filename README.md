@@ -15,11 +15,11 @@ The goal of this tool is to provide an easier way of testing a container against
 #### run the image
 ```shell
 # create an alias to sccoc image
-$ alias sccoc='_(){ export OPENSHIFT_SCC=${OPENSHIFT_SCC}; }; _; sudo docker run --rm --privileged --pid=host --net=host -v /run:/run -v /sys:/sys -v /sys/fs/cgroup:/sys/fs/cgroup -v /var/lib/docker:/var/lib/docker -v /tmp:/tmp -e OPENSHIFT_SCC=${OPENSHIFT_SCC} docker.io/tchughesiv/sccoc'
+$ alias sccoc='_(){ export SCC=${OPENSHIFT_SCC}; }; _; docker run --rm --privileged --pid=host --net=host -v /run:/run -v /sys/fs/cgroup:/sys/fs/cgroup -v /var/lib/docker:/var/lib/docker -v /tmp/openshift-integration:/tmp/openshift-integration -e OPENSHIFT_SCC=${SCC} docker.io/tchughesiv/sccoc'
 
-# alias sccoc='_(){ export OPENSHIFT_SCC=${OPENSHIFT_SCC}; }; _; sudo docker run --rm --privileged -v /run:/run -v /sys:/sys -v /sys/fs/cgroup:/sys/fs/cgroup -v /var/lib/docker:/var/lib/docker -v /tmp:/tmp -e OPENSHIFT_SCC=${OPENSHIFT_SCC} docker.io/tchughesiv/sccoc'
+# $ alias sccoc='_(){ export SCC=${OPENSHIFT_SCC}; }; _; docker run --rm --privileged --pid=host --net=host -v /run:/run -v /sys:/sys -v /sys/fs/cgroup:/sys/fs/cgroup -v /var/lib/docker:/var/lib/docker -v /tmp:/tmp -e OPENSHIFT_SCC=${SCC} docker.io/tchughesiv/sccoc'
 
-# $ alias sccoc="sudo docker run --rm -ti --privileged --pid=host --net=host -v /run:/run -v /sys:/sys -v /sys/fs/cgroup:/sys/fs/cgroup -v /var/lib/docker:/var/lib/docker -v /tmp:/tmp tchughesiv/sccoc"
+# alias sccoc='_(){ export SCC=${OPENSHIFT_SCC}; }; _; sudo docker run --rm --privileged -v /run:/run -v /sys:/sys -v /sys/fs/cgroup:/sys/fs/cgroup -v /var/lib/docker:/var/lib/docker -v /tmp:/tmp -e OPENSHIFT_SCC=${SCC} docker.io/tchughesiv/sccoc'
 
 # the tool defaults to the "restricted" scc... e.g.
 $ sccoc run testpod --image=registry.centos.org/container-examples/starter-arbitrary-uid

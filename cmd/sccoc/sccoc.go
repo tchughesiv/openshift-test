@@ -16,7 +16,6 @@ import (
 	"github.com/openshift/origin/pkg/cmd/util/clientcmd"
 	"github.com/openshift/origin/pkg/oc/cli"
 	"github.com/openshift/origin/pkg/oc/cli/config"
-	testutil "github.com/openshift/origin/test/util"
 	testserver "github.com/openshift/origin/test/util/server"
 	kclientcmd "k8s.io/client-go/tools/clientcmd"
 
@@ -32,20 +31,18 @@ import (
 var (
 	n    = time.Now()
 	args = os.Args
-	d    = testutil.GetBaseDir() + "/log"
 )
 
 func init() {
-	/*
-		if runtime.GOOS == "darwin" {
-			os.Setenv("TMPDIR", "/tmp")
+	if contains(os.Args, "--help") {
+		command := cli.CommandFor("oc")
+		os.Args = []string{"oc", "run", "--help"}
+		if err := command.Execute(); err != nil {
+			os.Exit(1)
 		}
-		// How can we further suppress the "startup" logs????
-		logs.InitLogs()
-		defer logs.FlushLogs()
-		defer serviceability.BehaviorOnPanic(os.Getenv("OPENSHIFT_ON_PANIC"))()
-		defer serviceability.Profile(os.Getenv("OPENSHIFT_PROFILE")).Stop()
-	*/
+		os.Exit(1)
+	}
+
 	rand.Seed(time.Now().UTC().UnixNano())
 	if len(os.Getenv("GOMAXPROCS")) == 0 {
 		runtime.GOMAXPROCS(runtime.NumCPU())
@@ -57,7 +54,8 @@ func init() {
 		checkErr(gv.Set(v))
 	} else {
 		gl := cmdutil.Env("GLOG_LEVEL", "ERROR") // INFO, ERROR, FATAL
-		os.Args = []string{"glog", "-stderrthreshold=" + gl, "-logtostderr=false", "-log_dir=" + d}
+		// os.Args = []string{"glog", "-stderrthreshold=" + gl, "-logtostderr=false", "-log_dir=" + testutil.GetBaseDir() + "/log"}
+		os.Args = []string{"glog", "-stderrthreshold=" + gl, "-logtostderr=false"}
 		flag.Parse()
 	}
 }
@@ -66,7 +64,8 @@ func main() {
 	os.Args = args
 	var sccopts []string
 	sflag := cmdutil.Env("OPENSHIFT_SCC", bp.SecurityContextConstraintRestricted)
-	os.Setenv("TEST_ETCD_DIR", testutil.GetBaseDir()+"/etcd")
+	//os.Setenv("TEST_ETCD_DIR", testutil.GetBaseDir()+"/etcd")
+	os.Setenv("TEST_ETCD_DIR", "/tmp/etcd")
 
 	if len(os.Args) == 1 {
 		fmt.Printf("\nError: unknown command for %#v... must use \"run\"\n", os.Args[0])
@@ -92,8 +91,8 @@ func main() {
 	mconfig, nconfig, _, err := testserver.DefaultAllInOneOptions()
 	checkErr(err)
 
-	mkDir(d)
-	mpath := testutil.GetBaseDir() + "/manifests"
+	// mkDir(testutil.GetBaseDir() + "/log")
+	// mpath := testutil.GetBaseDir() + "/manifests"
 	/*
 		nconfig.PodManifestConfig = &configapi.PodManifestConfig{
 			Path: mpath,
@@ -137,7 +136,7 @@ func main() {
 	}
 
 	// remove secrets from pod before kubelet runs
-	recreatePod(kclient, namespace, mpath)
+	recreatePod(kclient, namespace)
 
 	fmt.Println("\nTotal start time:")
 	fmt.Println(time.Since(n))
