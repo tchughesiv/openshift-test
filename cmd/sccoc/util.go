@@ -61,10 +61,10 @@ func runKubelet(nodeconfig *node.NodeConfig) {
 	//kubeCfg := s.KubeletConfiguration
 	kubeDeps := nodeconfig.KubeletDeps
 	s := nodeconfig.KubeletServer
-	s.Containerized = true
 	dinfo, err := kubeDeps.DockerClient.Info()
 	checkErr(err)
 	s.CgroupDriver = dinfo.CgroupDriver
+	s.Containerized = true
 	s.RunOnce = false
 	checkErr(app.Run(s, kubeDeps))
 	//checkErr(app.RunKubelet(&kubeFlags, &kubeCfg, kubeDeps, false, true))

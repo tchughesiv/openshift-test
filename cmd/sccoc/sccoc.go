@@ -34,7 +34,8 @@ var (
 )
 
 func init() {
-	if contains(os.Args, "--help") {
+	// os.Setenv("BASETMPDIR", "/var/tmp/openshift-integration")
+	if contains(os.Args, "--help") || contains(os.Args, "-h") || len(os.Args) == 1 || os.Args[1] != "run" {
 		command := cli.CommandFor("oc")
 		os.Args = []string{"oc", "run", "--help"}
 		if err := command.Execute(); err != nil {
@@ -67,13 +68,6 @@ func main() {
 	//os.Setenv("TEST_ETCD_DIR", testutil.GetBaseDir()+"/etcd")
 	os.Setenv("TEST_ETCD_DIR", "/tmp/etcd")
 
-	if len(os.Args) == 1 {
-		fmt.Printf("\nError: unknown command for %#v... must use \"run\"\n", os.Args[0])
-		os.Exit(1)
-	} else if os.Args[1] != "run" {
-		fmt.Printf("\nError: unknown command %#v for %#v... must use \"run\"\n", os.Args[1], os.Args[0])
-		os.Exit(1)
-	}
 	groups, users := bp.GetBoostrapSCCAccess(bp.DefaultOpenShiftInfraNamespace)
 	for _, v := range bp.GetBootstrapSecurityContextConstraints(groups, users) {
 		sccopts = append(sccopts, v.Name)
@@ -125,6 +119,7 @@ func main() {
 	checkErr(err)
 	sccMod(sflag, namespace, securityClient)
 	sccRm(sflag, namespace, securityClient)
+	defer runKubelet(nodeconfig)
 
 	// execute cli command, force pod resource
 	// command := cli.CommandFor("kubectl")
@@ -138,8 +133,7 @@ func main() {
 	// remove secrets from pod before kubelet runs
 	recreatePod(kclient, namespace)
 
+	fmt.Printf("\nPod created with %#v set for scc.\n", sflag)
 	fmt.Println("\nTotal start time:")
 	fmt.Println(time.Since(n))
-
-	runKubelet(nodeconfig)
 }
