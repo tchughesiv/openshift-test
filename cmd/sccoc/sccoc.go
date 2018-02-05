@@ -119,6 +119,7 @@ func main() {
 	checkErr(err)
 	sccMod(sflag, namespace, securityClient)
 	sccRm(sflag, namespace, securityClient)
+
 	defer runKubelet(nodeconfig)
 
 	// execute cli command, force pod resource
