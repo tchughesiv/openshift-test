@@ -120,6 +120,8 @@ func main() {
 	sccMod(sflag, namespace, securityClient)
 	sccRm(sflag, namespace, securityClient)
 
+	defer runKubelet(nodeconfig)
+
 	// execute cli command, force pod resource
 	// command := cli.CommandFor("kubectl")
 	command := cli.CommandFor("oc")
@@ -132,8 +134,7 @@ func main() {
 	// remove secrets from pod before kubelet runs
 	recreatePod(kclient, namespace)
 
+	fmt.Printf("\nPod created with %#v set for scc.\n", sflag)
 	fmt.Println("\nTotal start time:")
 	fmt.Println(time.Since(n))
-
-	runKubelet(nodeconfig)
 }
