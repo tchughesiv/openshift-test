@@ -13,19 +13,19 @@ The goal of this tool is to provide an easier way of testing a container against
 `sccoc run` is the only command allowed w/ this tool today.  It maps directly to the [`oc run`](https://docs.openshift.org/latest/cli_reference/basic_cli_operations.html#run) command. Currently, only a pod resource is generated/allowed.
 
 #### run the image
+
+For macOS users... you should also set `BASETMPDIR=/var/lib` prior to running.
+
 ```shell
 # create an alias to sccoc image
-$ alias sccoc='_(){ export S=${OPENSHIFT_SCC} V=${BASETMPDIR:-"/tmp/openshift-integration"}; }; _; docker run --rm --privileged --pid=host --net=host -v /:/rootfs:ro -v /dev:/dev -v /var/run:/var/run -v /sys:/sys -v /sys/fs/cgroup:/sys/fs/cgroup:ro -v /sys/devices/virtual/net:/sys/devices/virtual/net -v /var/lib/docker:/var/lib/docker -v ${V}:${V}:z -v ${V}/volume:${V}/volume:rslave -e OPENSHIFT_SCC=${S} -e BASETMPDIR=${V} docker.io/tchughesiv/sccoc'
-
-# debug
-# $ alias sccoc='_(){ export S=${OPENSHIFT_SCC} E=${GLOG_V:-"0"} V=${BASETMPDIR:-"/tmp/openshift-integration"}; }; _; docker run --rm --privileged --pid=host --net=host -v /:/rootfs:ro -v /dev:/dev -v /var/run:/var/run -v /sys:/sys -v /sys/fs/cgroup:/sys/fs/cgroup:ro -v /sys/devices/virtual/net:/sys/devices/virtual/net -v /var/lib/docker:/var/lib/docker -v ${V}:${V}:z -v ${V}/volume:${V}/volume:rslave -e OPENSHIFT_SCC=${S} -e BASETMPDIR=${V} -e GLOG_V=${E} docker.io/tchughesiv/sccoc'
+$ alias sccoc='_(){ export S=${OPENSHIFT_SCC} V=${BASETMPDIR:-"/tmp/openshift-integration"}; }; _; docker run --rm --privileged --pid=host --net=host -v /:/rootfs:ro -v /dev:/dev -v /var/run:/var/run -v /sys:/sys -v /sys/fs/cgroup:/sys/fs/cgroup:ro -v /sys/devices/virtual/net:/sys/devices/virtual/net -v /var/lib/docker:/var/lib/docker -v ${V}/openshift.local.config:${V}/openshift.local.config -v ${V}/volume:${V}/volume:rslave -e OPENSHIFT_SCC=${S} -e BASETMPDIR=${V} docker.io/tchughesiv/sccoc'
 
 # the tool defaults to the "restricted" scc... e.g.
 $ sccoc run testpod --image=registry.centos.org/container-examples/starter-arbitrary-uid
 
 # or, you can specify an alternate scc w/ the "OPENSHIFT_SCC" env variable
-$ OPENSHIFT_SCC=anyuid
-$ sccoc run testpod --image=registry.centos.org/container-examples/starter-arbitrary-uid
+$ OPENSHIFT_SCC=nonroot
+$ sccoc run testpod --image=registry.centos.org/container-examples/starter
 
 # you can specify a host port, for example, using the run options... e.g. mysql on 3306
 $ sccoc run mariadb --image=docker.io/centos/mariadb-102-centos7 --env="MYSQL_ROOT_PASSWORD=test" --port=3306 --hostport=3306
