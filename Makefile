@@ -12,7 +12,7 @@ build:
 	ln -fs ../../${WHAT} origin/cmd/
 	chmod +x *build.sh
 	./build.sh ${WHAT} ${BUILDER_IMAGE} ${OUTPUT_DIR} ${BINARY}
-	docker build --build-arg sccoc=${BINARY} -t ${IMAGE_NAME} ${OUTPUT_DIR}/
+	docker build --build-arg b=${BINARY} -t ${IMAGE_NAME} ${OUTPUT_DIR}/
 
 #install:
 #	$(eval SCCOC_PATH=$(source ./origin/hack/lib/init.sh && which sccoc)) \
