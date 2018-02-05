@@ -25,18 +25,23 @@ $ sccoc run testpod --image=registry.centos.org/container-examples/starter-arbit
 
 # or, you can specify an alternate scc w/ the "OPENSHIFT_SCC" env variable
 $ OPENSHIFT_SCC=nonroot
-$ sccoc run testpod --image=registry.centos.org/container-examples/starter
+$ sccoc run mariadb --image=docker.io/centos/mariadb-102-centos7 --env MYSQL_ROOT_PASSWORD=test
 
 # you can specify a host port, for example, using the run options... e.g. mysql on 3306
-$ sccoc run mariadb --image=docker.io/centos/mariadb-102-centos7 --env="MYSQL_ROOT_PASSWORD=test" --port=3306 --hostport=3306
-$ curl localhost:3306
-
 $ OPENSHIFT_SCC=anyuid
 $ sccoc run nginx --image=docker.io/nginx --port=80 --hostport=8080
 $ curl localhost:8080
 ```
 
 It's currently helpfuly to open a separate terminal while your container deploys and monitor the runtime for your pod. Once the image is pulled and pod deployed, sccoc can be exited.
+
+Running a container from the Red Hat Container Catalog:
+```shell
+$ docker login registry.connect.redhat.com
+$ docker pull registry.connect.redhat.com/crunchydata/crunchy-postgres
+$ OPENSHIFT_SCC=nonroot # or OPENSHIFT_SCC=anyuid
+$ sccoc run crunchydb --image=registry.connect.redhat.com/crunchydata/crunchy-postgres --env PG_MODE=primary --env PG_PRIMARY_USER=admin --env PG_PRIMARY_PASSWORD=pw --env PG_USER=user --env PG_PASSWORD=pw --env PG_DATABASE=db --env PG_ROOT_PASSWORD=pw --env PG_PRIMARY_PORT=5432
+```
 
 #### build
 ```shell
