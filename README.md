@@ -15,7 +15,10 @@ The goal of this tool is to provide an easier way of testing a container against
 #### run the image
 ```shell
 # create an alias to sccoc image
-$ alias sccoc='_(){ export S=${OPENSHIFT_SCC} V=${BASETMPDIR:-"/tmp/openshift-integration"}; }; _; docker run --rm --privileged --pid=host --net=host -v /run:/run -v /sys:/sys -v /sys/fs/cgroup:/sys/fs/cgroup:ro -v /var/lib/docker:/var/lib/docker -v ${V}:${V} -e OPENSHIFT_SCC=${S} -e BASETMPDIR=${V} docker.io/tchughesiv/sccoc'
+$ alias sccoc='_(){ export S=${OPENSHIFT_SCC} V=${BASETMPDIR:-"/tmp/openshift-integration"}; }; _; docker run --rm --privileged --pid=host --net=host -v /:/rootfs:ro -v /dev:/dev -v /var/run:/var/run -v /sys:/sys -v /sys/fs/cgroup:/sys/fs/cgroup -v /sys/devices/virtual/net:/sys/devices/virtual/net -v /var/lib/docker:/var/lib/docker -v ${V}:${V} -e OPENSHIFT_SCC=${S} -e BASETMPDIR=${V} docker.io/tchughesiv/sccoc'
+
+# debug
+# $ alias sccoc='_(){ export S=${OPENSHIFT_SCC} E=${GLOG_V:-"0"} V=${BASETMPDIR:-"/tmp/openshift-integration"}; }; _; docker run --rm --privileged --pid=host --net=host -v /:/rootfs:ro -v /dev:/dev -v /var/run:/var/run -v /sys:/sys -v /sys/fs/cgroup:/sys/fs/cgroup -v /sys/devices/virtual/net:/sys/devices/virtual/net -v /var/lib/docker:/var/lib/docker -v ${V}:${V} -e OPENSHIFT_SCC=${S} -e BASETMPDIR=${V} -e GLOG_V=${E} docker.io/tchughesiv/sccoc'
 
 # the tool defaults to the "restricted" scc... e.g.
 $ sccoc run testpod --image=registry.centos.org/container-examples/starter-arbitrary-uid
