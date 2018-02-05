@@ -36,10 +36,8 @@ var (
 func init() {
 	// os.Setenv("BASETMPDIR", "/var/tmp/openshift-integration")
 	if contains(os.Args, "--help") || contains(os.Args, "-h") || len(os.Args) == 1 || os.Args[1] != "run" {
-		//if contains(os.Args, "--help") || contains(os.Args, "-h") || len(os.Args) == 1 {
 		command := cli.CommandFor("oc")
 		os.Args = []string{"oc", "run", "--help"}
-		//os.Args = []string{"oc", "--help"}
 		if err := command.Execute(); err != nil {
 			os.Exit(1)
 		}
@@ -126,11 +124,8 @@ func main() {
 
 	// execute cli command, force pod resource
 	// command := cli.CommandFor("kubectl")
-
 	command := cli.CommandFor("oc")
 	os.Args = append(os.Args, "--restart=Never")
-	//os.Args = append(os.Args, "--namespace="+namespace)
-
 	if err := command.Execute(); err != nil {
 		os.Exit(1)
 	}
