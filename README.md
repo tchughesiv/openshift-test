@@ -14,11 +14,9 @@ The goal of this tool is to provide an easier way of testing a container against
 
 #### run the image
 
-For macOS users... you should also set `BASETMPDIR=/var/lib` prior to running.
-
 ```shell
 # create an alias to sccoc image
-$ alias sccoc='_(){ export S=${OPENSHIFT_SCC} V=${BASETMPDIR:-${HOME}/openshift-sccoc}; }; _; docker run --rm --privileged --pid=host --net=host -v /:/rootfs:ro -v /dev:/dev -v /var/run:/var/run -v /sys:/sys -v /sys/fs/cgroup:/sys/fs/cgroup:ro -v /sys/devices/virtual/net:/sys/devices/virtual/net -v /var/lib/docker:/var/lib/docker -v ${V}/openshift.local.config:${V}/openshift.local.config -v ${V}/volume:${V}/volume:rslave -e OPENSHIFT_SCC=${S} -e BASETMPDIR=${V} docker.io/tchughesiv/sccoc'
+$ alias sccoc='_(){ export S=${OPENSHIFT_SCC} V=${BASETMPDIR:-${HOME}/openshift-sccoc}; }; _; docker run --rm --privileged --pid=host --net=host -v /:/rootfs:ro -v /dev:/dev -v /var/run:/var/run -v /sys:/sys -v /sys/fs/cgroup:/sys/fs/cgroup:ro -v /sys/devices/virtual/net:/sys/devices/virtual/net -v /var/lib/docker:/var/lib/docker -v ${V}/openshift.local.config:${V}/openshift.local.config -v ${V}/volume:${V}/volume -e OPENSHIFT_SCC=${S} -e BASETMPDIR=${V} docker.io/tchughesiv/sccoc'
 
 # the tool defaults to the "restricted" scc... e.g.
 $ docker pull registry.centos.org/container-examples/starter-arbitrary-uid
