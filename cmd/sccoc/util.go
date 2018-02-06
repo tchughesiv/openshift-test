@@ -129,3 +129,10 @@ func rmSV(p *api.Pod) {
 		}
 	}
 }
+
+func sliceInsert(slice []string, index int, value string) []string {
+	s := append(slice, "")
+	copy(s[index+1:], s[index:])
+	s[index] = value
+	return s
+}
