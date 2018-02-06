@@ -35,7 +35,7 @@ var (
 
 func init() {
 	// os.Setenv("BASETMPDIR", "/var/tmp/openshift-integration")
-	if contains(os.Args, "--help") || contains(os.Args, "-h") || len(os.Args) == 1 || os.Args[1] != "run" {
+	if contains(os.Args, "--help") || contains(os.Args, "-h") || len(os.Args) < 3 || os.Args[1] != "run" {
 		command := cli.CommandFor("oc")
 		os.Args = []string{"oc", "run", "--help"}
 		if err := command.Execute(); err != nil {
@@ -125,7 +125,15 @@ func main() {
 	// execute cli command, force pod resource
 	// command := cli.CommandFor("kubectl")
 	command := cli.CommandFor("oc")
-	os.Args = append(os.Args, "--restart=Never")
+	if len(os.Args) > 3 {
+		for i, v := range os.Args {
+			if v == "--restart=Always" || v == "--restart='Always'" {
+				os.Args = append(os.Args[:i], os.Args[i+1:]...)
+				break
+			}
+		}
+		os.Args = sliceInsert(os.Args, 3, "--restart=Never")
+	}
 	if err := command.Execute(); err != nil {
 		os.Exit(1)
 	}
@@ -134,6 +142,5 @@ func main() {
 	recreatePod(kclient, namespace)
 
 	fmt.Printf("\nPod created with %#v set for scc.\n", sflag)
-	fmt.Println("\nTotal start time:")
 	fmt.Println(time.Since(n))
 }
